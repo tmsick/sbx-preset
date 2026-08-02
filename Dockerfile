@@ -41,9 +41,11 @@ RUN apt-get update -y \
 #
 # Pinned so rebuilding the image doesn't silently pick up a new mise
 # release; override with --build-arg MISE_VERSION=... to try another one.
-# The installer has no "latest" keyword -- it interpolates this straight
-# into the release URL -- so leaving it unset is what selects the newest
-# release, at the cost of reproducibility.
+# The installer has no "latest" keyword -- left unset it falls back to a
+# release number baked into the script itself, which would tie the build
+# to whenever mise.run happened to be fetched. Naming a release other
+# than that baked-in one also moves the download from mise's own host to
+# GitHub releases; both paths verify a checksum.
 ARG MISE_VERSION=v2026.7.18
 
 # MISE_INSTALL_PATH overrides the installer's per-user default of
