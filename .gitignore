@@ -1,0 +1,9 @@
+# preset/ is keyed by agent (preset/claude/ mirrors ~/.claude/) and is baked
+# into the image by the Dockerfile. It holds personal agent configuration, so
+# its contents stay out of git -- but each agent directory has to exist for
+# the COPY to resolve on a fresh clone, hence the .gitkeep files.
+/preset/*/*
+!/preset/*/.gitkeep
+
+# Image tarballs staged for `sbx template load`.
+/tmp/
