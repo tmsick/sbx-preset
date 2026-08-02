@@ -46,7 +46,7 @@ RUN apt-get update -y \
 # to whenever mise.run happened to be fetched. Naming a release other
 # than that baked-in one also moves the download from mise's own host to
 # GitHub releases; both paths verify a checksum.
-ARG MISE_VERSION=v2026.7.18
+ARG MISE_VERSION=v2026.8.0
 
 # MISE_INSTALL_PATH overrides the installer's per-user default of
 # ~/.local/bin/mise. This step runs as root, so the default would hide
