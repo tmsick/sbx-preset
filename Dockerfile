@@ -31,7 +31,7 @@ ENV SHELL=/usr/bin/fish
 # Official installer, per mise's own guidance for containers. Pinned so a
 # rebuild doesn't silently pick up a new release; override with
 # --build-arg MISE_VERSION=... to try another one.
-ARG MISE_VERSION=v2026.8.0
+ARG MISE_VERSION=v2026.8.2
 
 # Install as root into a shared path (the installer's default ~/.local/bin
 # would land in /root). Kept as ARG, not ENV, so it doesn't leak into the
