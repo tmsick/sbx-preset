@@ -61,6 +61,12 @@ COPY --chown=agent:agent config/mise/ /home/agent/.config/mise/
 # immediately rather than on first `mise install` inside the sandbox.
 RUN mise install
 
+# `mise activate` (in config.fish) only wires up shims/env hooks, not shell
+# completions -- fish needs its own script autoloaded from completions/.
+# Generated at build time so it tracks whatever MISE_VERSION is pinned above.
+RUN mkdir -p /home/agent/.config/fish/completions \
+    && mise completion fish > /home/agent/.config/fish/completions/mise.fish
+
 # Seed VS Code Server's remote settings so its integrated terminal defaults to
 # fish. Needed because sandboxd forces SHELL=/bin/bash into every sandbox at
 # creation, overriding both this image's ENV SHELL and the usermod above; VS

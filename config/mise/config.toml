@@ -4,6 +4,7 @@ neovim = "latest"
 node = "lts"
 npm = "latest"
 python = "latest"
+usage = "latest"
 
 [settings]
-minimum_release_age_excludes = ["bat", "neovim", "node", "npm", "python"]
+minimum_release_age_excludes = ["bat", "neovim", "node", "npm", "python", "usage"]
