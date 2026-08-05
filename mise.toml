@@ -1,9 +1,8 @@
 # Build the sandbox template image and hand it to Docker Sandboxes.
 #
-# sandboxd keeps its own image store, separate from the host Docker daemon,
-# so an image built here stays invisible to sbx until it has been exported
-# with `docker save` and imported with `sbx template load`. The tarball is
-# only a courier for that handoff; `mise run clean` throws it away.
+# sandboxd keeps its own image store, separate from the host Docker daemon, so
+# an image built here is invisible to sbx until `docker save` + `sbx template
+# load`. `mise run clean` removes the intermediate tarball.
 #
 #   mise run                            # build, save and load claude-code
 #   BASE_VARIANT=shell mise run          # the agent-less variant
@@ -11,11 +10,11 @@
 #   mise run build                       # stop after `docker build`
 #   sbx run -t sbx-preset:claude-code claude --kit ./kit/claude/ --kit ./kit/git/ .
 #
-# Variables are read from the shell environment with defaults, e.g.
-# `FOO=bar mise run`. TAG is left unset here on purpose -- its default is
-# BASE_VARIANT, derived below -- and MISE_VERSION is intentionally not given
-# a default so the pin stays the Dockerfile's alone; an empty value there
-# just means "don't override it".
+# Variables are read from the environment, e.g. `FOO=bar mise run` (see
+# todo.md for a known bug with this in shells where mise is already
+# activated). TAG has no default of its own -- it defaults to BASE_VARIANT
+# below. MISE_VERSION has no default here so the Dockerfile's pin stays
+# authoritative.
 
 [env]
 IMAGE = "{{ get_env(name='IMAGE', default='sbx-preset') }}"

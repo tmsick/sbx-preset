@@ -1,19 +1,7 @@
-# The build context only needs config/ -- the paths the Dockerfile COPYs.
-# kit/ is applied by sbx at sandbox creation time, not by this build, so it
-# has no business in the image. Everything else is dead weight, and some of
-# it is heavy: .git also carries the unreachable blobs of `docker save`
-# tarballs staged before .gitignore existed, and tmp/ holds the tarball on
-# its way to `sbx template load`.
+# Build context only needs config/ -- the paths the Dockerfile COPYs. kit/ is
+# applied by sbx at sandbox creation, not by this build, so it's excluded too.
 #
-# Written as an allowlist -- "*" followed by ! exceptions, which is Docker's
-# documented way to say what to include rather than what to exclude. It fails
-# closed: COPYing some new path means allowing it here deliberately, instead
-# of the rest of the repo riding along unnoticed.
-#
-# This does not change what today's build ships. BuildKit already narrows the
-# filesync to the paths a COPY names, so the context transfer was already only
-# a few hundred bytes. It is a guard for the day the Dockerfile grows a
-# broader COPY, or something builds with DOCKER_BUILDKIT=0 and the legacy
-# builder sends the whole directory.
+# Allowlist ("*" + "!" exceptions) so a new COPY must explicitly widen this
+# file instead of the rest of the repo riding along unnoticed.
 *
 !config

@@ -2,19 +2,11 @@
 # `sbx kit add`, so editing it takes effect on the next `sbx create`/`run`
 # with no image rebuild.
 #
-# Targets files/home/.gitconfig and files/home/.gitignore_global on
-# purpose, not the XDG-style ~/.config/git/{config,ignore}. sandboxd's own
-# GitConfigCustomizer forces core.excludesFile to ~/.gitignore_global on
-# every sandbox start via `git config --file ~/.gitconfig core.excludesFile
-# ~/.gitignore_global` (a single-key read-modify-write) plus an idempotent
-# append of `.sbx` to ~/.gitignore_global -- both non-destructive to
-# whatever this kit put there first. Landing content at
-# ~/.config/git/{config,ignore} instead leaves it shadowed:
-# core.excludesFile always wins, so that ignore file is never actually
-# read. Verified by probing a sandbox with a kit containing a
-# files/home/.gitconfig marker key and a files/home/.gitignore_global with
-# custom patterns -- both survived sandboxd's startup step untouched, with
-# excludesFile/`.sbx` merged in alongside them.
+# Targets files/home/.gitconfig and files/home/.gitignore_global, not the
+# XDG-style ~/.config/git/{config,ignore}: sandboxd's own GitConfigCustomizer
+# forces core.excludesFile to ~/.gitignore_global on every sandbox start
+# (non-destructively merging into whatever this kit put there), so an
+# XDG-style ignore file would just be shadowed and never read.
 #
 # files/home/.gitconfig and files/home/.gitignore_global are gitignored --
 # see .gitignore -- and must exist locally before this kit is usable; only
