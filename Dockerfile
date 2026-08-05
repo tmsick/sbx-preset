@@ -10,7 +10,7 @@
 # Defaults to claude-code; pass --build-arg BASE_VARIANT=shell to build
 # the agent-less variant used by `sbx run shell` instead.
 ARG BASE_VARIANT=claude-code
-FROM docker/sandbox-templates:${BASE_VARIANT}
+FROM docker/sandbox-templates:${BASE_VARIANT} AS base
 
 # System package installation must be done as root.
 USER root
@@ -28,12 +28,23 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # it, the binary fails at runtime with "error while loading shared
 # libraries: libatomic.so.1: cannot open shared object file".
 # See https://github.com/pnpm/pnpm/issues/11531.
+#
+# fish is the sandbox's default shell (set below); it ships in Ubuntu's
+# universe component, which the base image already has enabled.
 RUN apt-get update -y \
     && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     libatomic1 \
+    fish \
     && rm -rf /var/lib/apt/lists/*
+
+# Make fish the agent user's login shell and the shell every process sees
+# via $SHELL, matching the host convention this template's user works in.
+# usermod (not chsh) because there is no controlling tty for chsh's
+# prompts during a build.
+RUN usermod --shell /usr/bin/fish agent
+ENV SHELL=/usr/bin/fish
 
 # Install mise with the official installer, which is what mise documents
 # for container images (its apt repository is aimed at interactive
@@ -77,10 +88,16 @@ ENV PATH="/home/agent/.local/share/mise/shims:${PATH}"
 # hooks, so interactive shells still get a real activation. mise
 # documents having both as safe.
 #
+# Both bash and fish get an activation line: fish is the agent's login
+# shell (and what an interactive `sbx run shell` / `sbx exec` drops into),
+# but tools like Claude Code's Bash tool still run plain bash directly.
+#
 # Runtimes installed later via `mise install` land under
 # ~/.local/share/mise, so this part must run as agent, not root.
 USER agent
-RUN echo 'eval "$(mise activate bash)"' >> /home/agent/.bashrc
+RUN echo 'eval "$(mise activate bash)"' >> /home/agent/.bashrc \
+    && mkdir -p /home/agent/.config/fish \
+    && echo 'mise activate fish | source' >> /home/agent/.config/fish/config.fish
 
 # Bake mise's own global config in. config/mise/ mirrors ~/.config/mise/,
 # mise's default global config location.
@@ -116,3 +133,16 @@ RUN mise install
 # must be real files: a symlink pointing outside the build context
 # (dotfiles, say) is not something Docker can follow.
 COPY --chown=agent:agent preset/claude/ /home/agent/.claude/
+
+# The claude-code base image's CMD launches `claude` directly; the shell
+# base image's CMD is a bare `bash`, which is what `sbx run shell` drops
+# an interactive session into. Overriding it to fish only in that variant
+# -- via a per-flavor stage picked by BASE_VARIANT -- makes fish the
+# sandbox's default shell without touching how the claude-code variant
+# starts. CMD can't be made conditional on ARG directly; stage selection
+# is the mechanism Docker offers instead.
+FROM base AS final-claude-code
+FROM base AS final-shell
+CMD ["fish"]
+
+FROM final-${BASE_VARIANT} AS final
