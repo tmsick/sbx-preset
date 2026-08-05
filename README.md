@@ -15,7 +15,7 @@ mise run                    # build, save and load the template
 sbx run -t sbx-preset:claude-code claude --kit ./kit/claude/ --kit ./kit/git/ .
 ```
 
-Other tasks: `build`, `save`, `clean`.
+Other tasks: `build`, `save`, `clean`, `kit:init`.
 
 Variables (read from the environment): `IMAGE`, `BASE_VARIANT`, `TAG`, `MISE_VERSION`.
 
@@ -34,6 +34,8 @@ effect on the next `sbx create`/`run` with no `mise run` needed.
 
 Each kit's `spec.yaml` is committed; `files/` (the actual personal content) is
 gitignored. `sbx kit validate ./kit/<name>/` checks the artifact is well-formed.
+Run `mise run kit:init` once per clone to scaffold the `files/home/` dirs, then
+drop `CLAUDE.md`, `.gitconfig` and `.gitignore_global` straight in.
 
 `kit/claude/` injects `files/home/.claude/CLAUDE.md` to `/home/agent/.claude/CLAUDE.md`.
 Only `CLAUDE.md` and `rules/` are worth injecting this way; `sbx` rewrites
