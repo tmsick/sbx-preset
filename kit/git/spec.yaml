@@ -21,6 +21,6 @@
 # this spec.yaml is committed.
 schemaVersion: "1"
 kind: mixin
-name: git-preset
+name: git-config
 displayName: Personal git config
 description: "Injects a personal ~/.gitconfig and ~/.gitignore_global"

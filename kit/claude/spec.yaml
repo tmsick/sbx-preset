@@ -6,6 +6,6 @@
 # exist locally before this kit is usable; only this spec.yaml is committed.
 schemaVersion: "1"
 kind: mixin
-name: claude-preset
+name: claude-config
 displayName: Personal Claude Code preset
 description: "Injects a personal CLAUDE.md (and rules/, if present) for Claude Code"
