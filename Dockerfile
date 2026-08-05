@@ -92,12 +92,20 @@ ENV PATH="/home/agent/.local/share/mise/shims:${PATH}"
 # shell (and what an interactive `sbx run shell` / `sbx exec` drops into),
 # but tools like Claude Code's Bash tool still run plain bash directly.
 #
+# bash's activation stays a one-line append to .bashrc, which the base
+# image already provides; fish's config.fish does not exist until this
+# image creates it, so it is a committed file under config/fish/ instead
+# (copied in below) -- the same reproducible-template-config reasoning as
+# config/mise/, not a per-user preference under preset/.
+#
 # Runtimes installed later via `mise install` land under
 # ~/.local/share/mise, so this part must run as agent, not root.
 USER agent
-RUN echo 'eval "$(mise activate bash)"' >> /home/agent/.bashrc \
-    && mkdir -p /home/agent/.config/fish \
-    && echo 'mise activate fish | source' >> /home/agent/.config/fish/config.fish
+RUN echo 'eval "$(mise activate bash)"' >> /home/agent/.bashrc
+
+# Bake fish's config in. config/fish/ mirrors ~/.config/fish/, the same way
+# config/mise/ mirrors ~/.config/mise/ below.
+COPY --chown=agent:agent config/fish/ /home/agent/.config/fish/
 
 # Bake mise's own global config in. config/mise/ mirrors ~/.config/mise/,
 # mise's default global config location.

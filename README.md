@@ -34,10 +34,15 @@ the store seeded by `sbx skills import`.
 
 ## config/
 
-`config/mise/` mirrors `~/.config/mise/` and `config/vscode-server/` mirrors
-`~/.vscode-server/`; both are copied into the image the same way. Unlike `preset/`,
-`config/` is committed: it defines the reproducible toolchain and environment the
-template ships with, not personal configuration.
+`config/mise/` mirrors `~/.config/mise/`, `config/fish/` mirrors `~/.config/fish/`
+and `config/vscode-server/` mirrors `~/.vscode-server/`; all three are copied into
+the image the same way. Unlike `preset/`, `config/` is committed: it defines the
+reproducible toolchain and environment the template ships with, not personal
+configuration.
+
+`config/fish/config.fish` activates mise for interactive fish shells and sets a
+handful of environment-appropriate defaults (editor, locale, path, aliases)
+scoped to what actually exists in the image.
 
 `config/vscode-server/data/Machine/settings.json` sets fish as the default profile
 for VS Code's Remote-SSH integrated terminal. This is needed on top of the `agent`
