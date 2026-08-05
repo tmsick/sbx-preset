@@ -82,6 +82,21 @@ ENV PATH="/home/agent/.local/share/mise/shims:${PATH}"
 USER agent
 RUN echo 'eval "$(mise activate bash)"' >> /home/agent/.bashrc
 
+# Bake mise's own global config in. config/mise/ mirrors ~/.config/mise/,
+# mise's default global config location.
+#
+# Unlike preset/ (personal, gitignored), config/ is committed: it defines
+# the reproducible toolchain the template itself ships with, not per-user
+# secrets or preferences.
+COPY --chown=agent:agent config/mise/ /home/agent/.config/mise/
+
+# Install every tool pinned in config.toml at build time, so a sandbox
+# built from this image has them ready immediately instead of paying for
+# `mise install` on first use. `mise install` reads the global config
+# just copied in; no `mise trust` is needed first since that file lives
+# under mise's own config dir and is auto-trusted.
+RUN mise install
+
 # Bake the user's Claude Code preset. preset/ is keyed by agent -- sbx
 # supports several -- and preset/claude/ mirrors ~/.claude/, so
 # preset/claude/CLAUDE.md and preset/claude/rules/*.md land exactly where

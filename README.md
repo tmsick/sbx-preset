@@ -31,3 +31,9 @@ context.
 Only `CLAUDE.md` and `rules/` survive into a running sandbox; `sbx` rewrites
 `~/.claude/settings.json` and `~/.claude.json`, and bind-mounts `~/.claude/skills` from
 the store seeded by `sbx skills import`.
+
+## config/
+
+`config/mise/` mirrors `~/.config/mise/` and is copied into the image the same way.
+Unlike `preset/`, it's committed: it defines the reproducible toolchain the template
+ships with, not personal configuration.

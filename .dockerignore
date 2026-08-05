@@ -1,7 +1,7 @@
-# The build context only needs preset/ -- it is the one path the Dockerfile
-# COPYs. Everything else is dead weight, and some of it is heavy: .git also
-# carries the unreachable blobs of `docker save` tarballs staged before
-# .gitignore existed, and tmp/ holds the tarball on its way to
+# The build context only needs preset/ and config/ -- the paths the
+# Dockerfile COPYs. Everything else is dead weight, and some of it is heavy:
+# .git also carries the unreachable blobs of `docker save` tarballs staged
+# before .gitignore existed, and tmp/ holds the tarball on its way to
 # `sbx template load`.
 #
 # Written as an allowlist -- "*" followed by ! exceptions, which is Docker's
@@ -16,3 +16,4 @@
 # builder sends the whole directory.
 *
 !preset
+!config
