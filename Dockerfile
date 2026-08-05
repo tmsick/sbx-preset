@@ -96,7 +96,7 @@ ENV PATH="/home/agent/.local/share/mise/shims:${PATH}"
 # image already provides; fish's config.fish does not exist until this
 # image creates it, so it is a committed file under config/fish/ instead
 # (copied in below) -- the same reproducible-template-config reasoning as
-# config/mise/, not a per-user preference under preset/.
+# config/mise/, not a per-user preference under kit/.
 #
 # Runtimes installed later via `mise install` land under
 # ~/.local/share/mise, so this part must run as agent, not root.
@@ -110,7 +110,7 @@ COPY --chown=agent:agent config/fish/ /home/agent/.config/fish/
 # Bake mise's own global config in. config/mise/ mirrors ~/.config/mise/,
 # mise's default global config location.
 #
-# Unlike preset/ (personal, gitignored), config/ is committed: it defines
+# Unlike kit/ (personal, gitignored), config/ is committed: it defines
 # the reproducible toolchain the template itself ships with, not per-user
 # secrets or preferences.
 COPY --chown=agent:agent config/mise/ /home/agent/.config/mise/
