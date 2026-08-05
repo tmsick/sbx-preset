@@ -175,6 +175,17 @@ COPY --chown=agent:agent preset/claude/ /home/agent/.claude/
 # Personal identity (user.name, user.email, user.signingkey) belongs in
 # preset/, not the committed config/: config/ is the reproducible toolchain
 # every build gets, preset/ is what makes a build *this* user's.
+#
+# This isn't redundant with sbx's own identity handling. sbx resolves the
+# host's git identity and writes it into the *workspace's* local
+# .git/config at `sbx create`/`run` time -- but only when the workspace is
+# already a git repository at that moment. A `git init` run inside the
+# sandbox afterward, or any repo outside the mounted workspace (a scratch
+# clone, `--clone` mode's actual working copy), gets no identity at all and
+# `git commit` fails with "Please tell me who you are." user.name/email
+# here is the fallback for those gaps. No conflict on the happy path
+# either: when sbx does inject, it writes to the repo's local config,
+# which takes precedence over this global one anyway.
 COPY --chown=agent:agent preset/git/ /home/agent/.config/git/
 
 # The claude-code base image's CMD launches `claude` directly; the shell
