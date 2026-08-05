@@ -6,18 +6,20 @@ Claude Code preset.
 
 ## Usage
 
+Tasks are defined in `mise.toml`; run `mise trust` once per clone before the first `mise run`.
+
 ```sh
-make                        # build, save and load the template
+mise run                    # build, save and load the template
 sbx run -t sbx-preset:claude-code claude .
 ```
 
-Other targets: `build`, `save`, `clean`.
+Other tasks: `build`, `save`, `clean`.
 
-Variables: `IMAGE`, `BASE_VARIANT`, `TAG`, `MISE_VERSION`.
+Variables (read from the environment): `IMAGE`, `BASE_VARIANT`, `TAG`, `MISE_VERSION`.
 
 ```sh
-make BASE_VARIANT=shell         # the agent-less variant used by `sbx run shell`
-make MISE_VERSION=v2026.8.1     # override the pin in the Dockerfile
+BASE_VARIANT=shell mise run          # the agent-less variant used by `sbx run shell`
+MISE_VERSION=v2026.8.1 mise run      # override the pin in the Dockerfile
 ```
 
 ## preset/

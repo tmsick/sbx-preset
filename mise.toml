@@ -1,0 +1,66 @@
+# Build the sandbox template image and hand it to Docker Sandboxes.
+#
+# sandboxd keeps its own image store, separate from the host Docker daemon,
+# so an image built here stays invisible to sbx until it has been exported
+# with `docker save` and imported with `sbx template load`. The tarball is
+# only a courier for that handoff; `mise run clean` throws it away.
+#
+#   mise run                            # build, save and load claude-code
+#   BASE_VARIANT=shell mise run          # the agent-less variant
+#   MISE_VERSION=v2026.8.1 mise run      # override the pin in the Dockerfile
+#   mise run build                       # stop after `docker build`
+#   sbx run -t sbx-preset:claude-code claude .
+#
+# Variables are read from the shell environment with defaults, e.g.
+# `FOO=bar mise run`. TAG is left unset here on purpose -- its default is
+# BASE_VARIANT, derived below -- and MISE_VERSION is intentionally not given
+# a default so the pin stays the Dockerfile's alone; an empty value there
+# just means "don't override it".
+
+[env]
+IMAGE = "{{ get_env(name='IMAGE', default='sbx-preset') }}"
+BASE_VARIANT = "{{ get_env(name='BASE_VARIANT', default='claude-code') }}"
+TAG = "{{ get_env(name='TAG', default=env.BASE_VARIANT) }}"
+
+[tasks.default]
+description = "Build, save and load the image (same as `mise run load`)"
+depends = ["load"]
+
+[tasks.build]
+description = "docker build the template image"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+build_args=(--build-arg "BASE_VARIANT=$BASE_VARIANT")
+if [ -n "${MISE_VERSION:-}" ]; then
+  build_args+=(--build-arg "MISE_VERSION=$MISE_VERSION")
+fi
+docker build "${build_args[@]}" -t "$IMAGE:$TAG" .
+'''
+
+[tasks.save]
+description = "docker save the built image into tmp/"
+depends = ["build"]
+run = '''
+#!/usr/bin/env bash
+# A `docker save` killed partway through would otherwise leave a truncated
+# tarball behind; the trap throws it away instead.
+set -euo pipefail
+mkdir -p tmp
+tarball="tmp/$IMAGE-$TAG.tar"
+trap 'rm -f "$tarball"' ERR
+docker save "$IMAGE:$TAG" -o "$tarball"
+'''
+
+[tasks.load]
+description = "sbx template load the tarball from tmp/"
+depends = ["save"]
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+sbx template load "tmp/$IMAGE-$TAG.tar"
+'''
+
+[tasks.clean]
+description = "Remove the tmp/ tarball staging directory"
+run = "rm -rf tmp"
