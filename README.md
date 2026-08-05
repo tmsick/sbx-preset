@@ -34,6 +34,14 @@ the store seeded by `sbx skills import`.
 
 ## config/
 
-`config/mise/` mirrors `~/.config/mise/` and is copied into the image the same way.
-Unlike `preset/`, it's committed: it defines the reproducible toolchain the template
-ships with, not personal configuration.
+`config/mise/` mirrors `~/.config/mise/` and `config/vscode-server/` mirrors
+`~/.vscode-server/`; both are copied into the image the same way. Unlike `preset/`,
+`config/` is committed: it defines the reproducible toolchain and environment the
+template ships with, not personal configuration.
+
+`config/vscode-server/data/Machine/settings.json` sets fish as the default profile
+for VS Code's Remote-SSH integrated terminal. This is needed on top of the `agent`
+user's login shell: Docker Sandboxes forces `SHELL=/bin/bash` into every sandbox's
+environment at creation time, which is what both a plain `ssh` session and VS Code's
+terminal actually key off, so the login shell alone doesn't change what a Remote-SSH
+terminal opens.

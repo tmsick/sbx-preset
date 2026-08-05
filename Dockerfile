@@ -114,6 +114,26 @@ COPY --chown=agent:agent config/mise/ /home/agent/.config/mise/
 # under mise's own config dir and is auto-trusted.
 RUN mise install
 
+# Pre-seed VS Code Server's remote-machine settings so its integrated
+# terminal defaults to fish too.
+#
+# usermod above only changes agent's login shell in /etc/passwd, and
+# that's not enough: sandboxd forces SHELL=/bin/bash into every sandbox's
+# environment at container-creation time, overriding this image's own
+# ENV SHELL. Both a plain non-interactive `ssh <sandbox> command` and a
+# no-command interactive session land on bash regardless of the passwd
+# entry, and VS Code's Remote-SSH terminal picks its default shell the
+# same way, so it inherits bash too.
+#
+# VS Code Server reads host-specific ("Remote") settings from
+# ~/.vscode-server/data/Machine/settings.json on the remote and only
+# creates that file if it's missing, so seeding it here -- the same
+# mechanism the Dev Containers extension uses to apply
+# customizations.vscode.settings -- survives untouched into every
+# sandbox. config/vscode-server/ mirrors that path the same way
+# config/mise/ mirrors ~/.config/mise/.
+COPY --chown=agent:agent config/vscode-server/ /home/agent/.vscode-server/
+
 # Bake the user's Claude Code preset. preset/ is keyed by agent -- sbx
 # supports several -- and preset/claude/ mirrors ~/.claude/, so
 # preset/claude/CLAUDE.md and preset/claude/rules/*.md land exactly where
