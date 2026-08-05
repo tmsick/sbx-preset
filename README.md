@@ -24,19 +24,13 @@ MISE_VERSION=v2026.8.1 mise run      # override the pin in the Dockerfile
 
 ## preset/
 
-`preset/claude/` mirrors `~/.claude/` and `preset/git/` mirrors `~/.config/git/`; both
-are copied into the image. Their contents are gitignored, and must be real files —
-Docker cannot follow symlinks out of the build context.
+`preset/claude/` mirrors `~/.claude/` and is copied into the image. Its contents are
+gitignored, and must be real files — Docker cannot follow symlinks out of the build
+context.
 
 Only `CLAUDE.md` and `rules/` survive into a running sandbox; `sbx` rewrites
 `~/.claude/settings.json` and `~/.claude.json`, and bind-mounts `~/.claude/skills` from
 the store seeded by `sbx skills import`.
-
-`preset/git/config` and `preset/git/ignore` are git's own XDG-style locations for the
-global config and default `core.excludesFile` — git falls back to
-`~/.config/git/{config,ignore}` itself when `$XDG_CONFIG_HOME` is unset, so nothing
-else has to point git at them. The base image ships neither `~/.gitconfig` nor
-`~/.config/git/`, so there's no precedence conflict with an image default.
 
 ## config/
 
