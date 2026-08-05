@@ -1,3 +1,4 @@
+set -gx BAT_THEME Dracula
 set -gx DOCKER_HIDE_LEGACY_COMMANDS 1
 set -gx EDITOR nvim
 set -gx LANG C.utf8
