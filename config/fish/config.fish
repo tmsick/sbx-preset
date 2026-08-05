@@ -3,11 +3,11 @@ set -gx EDITOR nvim
 set -gx LANG C.utf8
 set -gx XDG_CONFIG_HOME "$HOME/.config"
 
-command -q git && alias g git
-command -q nvim && alias vim nvim
-command -q docker && alias d docker
 command -q bat && alias cat bat
+command -q docker && alias d docker
+command -q git && alias g git
 command -q less && alias less "less -i"
+command -q nvim && alias vim nvim
 
 fish_add_path -gpm "$HOME/.local/bin"
 fish_add_path -gpm "$HOME/bin"
