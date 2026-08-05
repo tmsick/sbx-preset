@@ -2,9 +2,9 @@
 
 A custom [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) template that adds
 [mise](https://mise.jdx.dev/) to the stock agent environment. Personal configuration
-(a Claude Code preset, and eventually others) is layered on top at sandbox creation
-time via a [kit](https://docs.docker.com/ai/sandboxes/customize/), not baked into the
-image -- see [kit/](#kit).
+(Claude Code, git, and eventually others) is layered on top at sandbox creation time
+via a [kit](https://docs.docker.com/ai/sandboxes/customize/), not baked into the image
+-- see [kit/](#kit).
 
 ## Usage
 
@@ -33,13 +33,12 @@ here rather than in `config/`: unlike an image rebuild, editing a kit's files ta
 effect on the next `sbx create`/`run` with no `mise run` needed.
 
 Each kit's `spec.yaml` is committed; `files/` (the actual personal content) is
-gitignored, the same way `preset/` used to be. `sbx kit validate ./kit/<name>/` checks
-the artifact is well-formed.
+gitignored. `sbx kit validate ./kit/<name>/` checks the artifact is well-formed.
 
 `kit/claude/` injects `files/home/.claude/CLAUDE.md` to `/home/agent/.claude/CLAUDE.md`.
 Only `CLAUDE.md` and `rules/` are worth injecting this way; `sbx` rewrites
 `~/.claude/settings.json` and `~/.claude.json` itself, and bind-mounts `~/.claude/skills`
-from the store seeded by `sbx skills import`, so those cannot be usefully preset from
+from the store seeded by `sbx skills import`, so those cannot be usefully seeded from
 here.
 
 `kit/git/` injects `files/home/.gitconfig` and `files/home/.gitignore_global` --
