@@ -142,26 +142,6 @@ RUN mise install
 # config/mise/ mirrors ~/.config/mise/.
 COPY --chown=agent:agent config/vscode-server/ /home/agent/.vscode-server/
 
-# Bake the user's Claude Code preset. preset/ is keyed by agent -- sbx
-# supports several -- and preset/claude/ mirrors ~/.claude/, so
-# preset/claude/CLAUDE.md and preset/claude/rules/*.md land exactly where
-# Claude Code already looks for them and nothing has to be wired up.
-# Copying into the existing directory merges, leaving the base image's own
-# contents alone.
-#
-# CLAUDE.md and rules/ are the only parts of ~/.claude that survive into a
-# running sandbox. sbx rewrites ~/.claude/settings.json and ~/.claude.json
-# when it creates the sandbox, and bind-mounts ~/.claude/skills from the
-# store that `sbx skills import` seeds, so settings, MCP servers and skills
-# cannot be baked in from here. Settings would have to go to
-# /etc/claude-code/managed-settings.json instead, which sbx does not touch.
-#
-# preset/claude/ holds personal configuration and is gitignored except for
-# the .gitkeep that keeps this COPY working on a fresh clone. Its contents
-# must be real files: a symlink pointing outside the build context
-# (dotfiles, say) is not something Docker can follow.
-COPY --chown=agent:agent preset/claude/ /home/agent/.claude/
-
 # The claude-code base image's CMD launches `claude` directly; the shell
 # base image's CMD is a bare `bash`, which is what `sbx run shell` drops
 # an interactive session into. Overriding it to fish only in that variant

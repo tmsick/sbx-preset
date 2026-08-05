@@ -1,8 +1,10 @@
 # sbx-preset
 
 A custom [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) template that adds
-[mise](https://mise.jdx.dev/) to the stock agent environment and bakes in a personal
-Claude Code preset.
+[mise](https://mise.jdx.dev/) to the stock agent environment. Personal configuration
+(a Claude Code preset, and eventually others) is layered on top at sandbox creation
+time via a [kit](https://docs.docker.com/ai/sandboxes/customize/), not baked into the
+image -- see [kit/](#kit).
 
 ## Usage
 
@@ -10,7 +12,7 @@ Tasks are defined in `mise.toml`; run `mise trust` once per clone before the fir
 
 ```sh
 mise run                    # build, save and load the template
-sbx run -t sbx-preset:claude-code claude .
+sbx run -t sbx-preset:claude-code claude --kit ./kit/claude/ .
 ```
 
 Other tasks: `build`, `save`, `clean`.
@@ -22,15 +24,23 @@ BASE_VARIANT=shell mise run          # the agent-less variant used by `sbx run s
 MISE_VERSION=v2026.8.1 mise run      # override the pin in the Dockerfile
 ```
 
-## preset/
+## kit/
 
-`preset/claude/` mirrors `~/.claude/` and is copied into the image. Its contents are
-gitignored, and must be real files — Docker cannot follow symlinks out of the build
-context.
+`kit/<name>/` directories are [sbx kits](https://docs.docker.com/ai/sandboxes/customize/)
+— declarative artifacts applied at sandbox creation (`--kit`) or to a running sandbox
+(`sbx kit add`), not baked into the image. Personal, per-user configuration belongs
+here rather than in `config/`: unlike an image rebuild, editing a kit's files takes
+effect on the next `sbx create`/`run` with no `mise run` needed.
 
-Only `CLAUDE.md` and `rules/` survive into a running sandbox; `sbx` rewrites
-`~/.claude/settings.json` and `~/.claude.json`, and bind-mounts `~/.claude/skills` from
-the store seeded by `sbx skills import`.
+Each kit's `spec.yaml` is committed; `files/` (the actual personal content) is
+gitignored, the same way `preset/` used to be. `sbx kit validate ./kit/<name>/` checks
+the artifact is well-formed.
+
+`kit/claude/` injects `files/home/.claude/CLAUDE.md` to `/home/agent/.claude/CLAUDE.md`.
+Only `CLAUDE.md` and `rules/` are worth injecting this way; `sbx` rewrites
+`~/.claude/settings.json` and `~/.claude.json` itself, and bind-mounts `~/.claude/skills`
+from the store seeded by `sbx skills import`, so those cannot be usefully preset from
+here.
 
 ## config/
 

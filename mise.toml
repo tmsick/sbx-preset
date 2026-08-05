@@ -9,7 +9,7 @@
 #   BASE_VARIANT=shell mise run          # the agent-less variant
 #   MISE_VERSION=v2026.8.1 mise run      # override the pin in the Dockerfile
 #   mise run build                       # stop after `docker build`
-#   sbx run -t sbx-preset:claude-code claude .
+#   sbx run -t sbx-preset:claude-code claude --kit ./kit/claude/ .
 #
 # Variables are read from the shell environment with defaults, e.g.
 # `FOO=bar mise run`. TAG is left unset here on purpose -- its default is

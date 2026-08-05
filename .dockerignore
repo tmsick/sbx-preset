@@ -1,8 +1,9 @@
-# The build context only needs preset/ and config/ -- the paths the
-# Dockerfile COPYs. Everything else is dead weight, and some of it is heavy:
-# .git also carries the unreachable blobs of `docker save` tarballs staged
-# before .gitignore existed, and tmp/ holds the tarball on its way to
-# `sbx template load`.
+# The build context only needs config/ -- the paths the Dockerfile COPYs.
+# kit/ is applied by sbx at sandbox creation time, not by this build, so it
+# has no business in the image. Everything else is dead weight, and some of
+# it is heavy: .git also carries the unreachable blobs of `docker save`
+# tarballs staged before .gitignore existed, and tmp/ holds the tarball on
+# its way to `sbx template load`.
 #
 # Written as an allowlist -- "*" followed by ! exceptions, which is Docker's
 # documented way to say what to include rather than what to exclude. It fails
@@ -15,5 +16,4 @@
 # broader COPY, or something builds with DOCKER_BUILDKIT=0 and the legacy
 # builder sends the whole directory.
 *
-!preset
 !config

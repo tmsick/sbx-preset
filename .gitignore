@@ -1,9 +1,8 @@
-# preset/ is keyed by agent (preset/claude/ mirrors ~/.claude/) and is baked
-# into the image by the Dockerfile. It holds personal agent configuration, so
-# its contents stay out of git -- but each agent directory has to exist for
-# the COPY to resolve on a fresh clone, hence the .gitkeep files.
-/preset/*/*
-!/preset/*/.gitkeep
+# kit/<name>/files/ holds the personal content a kit injects (kit/claude/'s
+# CLAUDE.md, say). spec.yaml stays committed -- it's just the declarative
+# wrapper -- but the files/ tree underneath it is per-user and stays out of
+# git, the same way preset/ used to.
+/kit/*/files/
 
 # Image tarballs staged for `sbx template load`.
 /tmp/

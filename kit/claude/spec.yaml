@@ -1,0 +1,11 @@
+# Injects the personal Claude Code preset (files/home/.claude/) into a
+# sandbox at creation (`--kit`) or via `sbx kit add`. Mirrors what
+# preset/claude/ used to bake into the image, minus the rebuild.
+#
+# files/home/.claude/CLAUDE.md is gitignored -- see .gitignore -- and must
+# exist locally before this kit is usable; only this spec.yaml is committed.
+schemaVersion: "1"
+kind: mixin
+name: claude-preset
+displayName: Personal Claude Code preset
+description: "Injects a personal CLAUDE.md (and rules/, if present) for Claude Code"
