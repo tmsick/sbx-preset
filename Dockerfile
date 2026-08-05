@@ -162,6 +162,21 @@ COPY --chown=agent:agent config/vscode-server/ /home/agent/.vscode-server/
 # (dotfiles, say) is not something Docker can follow.
 COPY --chown=agent:agent preset/claude/ /home/agent/.claude/
 
+# Bake the user's personal git config in. preset/git/ mirrors ~/.config/git/,
+# the same way preset/claude/ mirrors ~/.claude/ above.
+#
+# ~/.config/git/config and ~/.config/git/ignore are git's XDG-style global
+# config and default core.excludesFile -- git falls back to them itself
+# (defaulting XDG_CONFIG_HOME to ~/.config when unset), so no extra config or
+# environment variable is needed to make git pick them up. The base image
+# ships neither ~/.gitconfig nor ~/.config/git, so there is nothing here to
+# conflict with or take precedence over.
+#
+# Personal identity (user.name, user.email, user.signingkey) belongs in
+# preset/, not the committed config/: config/ is the reproducible toolchain
+# every build gets, preset/ is what makes a build *this* user's.
+COPY --chown=agent:agent preset/git/ /home/agent/.config/git/
+
 # The claude-code base image's CMD launches `claude` directly; the shell
 # base image's CMD is a bare `bash`, which is what `sbx run shell` drops
 # an interactive session into. Overriding it to fish only in that variant
