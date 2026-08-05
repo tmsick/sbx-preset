@@ -1,0 +1,26 @@
+# Injects personal git config into a sandbox at creation (`--kit`) or via
+# `sbx kit add`. Mirrors what preset/git/ used to bake into the image, minus
+# the rebuild -- and fixes the bug that approach had.
+#
+# Targets files/home/.gitconfig and files/home/.gitignore_global on purpose,
+# not the XDG-style ~/.config/git/{config,ignore} the old preset/git/ used.
+# sandboxd's own GitConfigCustomizer forces core.excludesFile to
+# ~/.gitignore_global on every sandbox start via `git config --file
+# ~/.gitconfig core.excludesFile ~/.gitignore_global` (a single-key
+# read-modify-write) plus an idempotent append of `.sbx` to
+# ~/.gitignore_global -- both non-destructive to whatever this kit put
+# there first. Landing our own content at ~/.config/git/{config,ignore}
+# instead left it shadowed: core.excludesFile always won, so that ignore
+# file was never actually read. Verified by probing a sandbox with a kit
+# containing a files/home/.gitconfig marker key and a files/home/.gitignore_global
+# with custom patterns -- both survived sandboxd's startup step untouched,
+# with excludesFile/`.sbx` merged in alongside them.
+#
+# files/home/.gitconfig and files/home/.gitignore_global are gitignored --
+# see .gitignore -- and must exist locally before this kit is usable; only
+# this spec.yaml is committed.
+schemaVersion: "1"
+kind: mixin
+name: git-preset
+displayName: Personal git config
+description: "Injects a personal ~/.gitconfig and ~/.gitignore_global"

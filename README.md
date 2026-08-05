@@ -12,7 +12,7 @@ Tasks are defined in `mise.toml`; run `mise trust` once per clone before the fir
 
 ```sh
 mise run                    # build, save and load the template
-sbx run -t sbx-preset:claude-code claude --kit ./kit/claude/ .
+sbx run -t sbx-preset:claude-code claude --kit ./kit/claude/ --kit ./kit/git/ .
 ```
 
 Other tasks: `build`, `save`, `clean`.
@@ -42,11 +42,23 @@ Only `CLAUDE.md` and `rules/` are worth injecting this way; `sbx` rewrites
 from the store seeded by `sbx skills import`, so those cannot be usefully preset from
 here.
 
+`kit/git/` injects `files/home/.gitconfig` and `files/home/.gitignore_global` --
+deliberately those paths, not the XDG-style `~/.config/git/{config,ignore}` a template
+`COPY` would use. sandboxd's own `GitConfigCustomizer` forces `core.excludesFile` to
+`~/.gitignore_global` on every sandbox start via a single-key `git config --file`
+read-modify-write plus an idempotent `.sbx` append, both non-destructive to whatever a
+kit put there first -- confirmed by probing a sandbox with marker content in both files
+and checking it survived alongside sandboxd's own additions. Landing content at
+`~/.config/git/{config,ignore}` instead leaves it shadowed: `core.excludesFile` always
+wins, so that ignore file is never actually read, and there is no fallback identity for
+a `git init` run inside the sandbox or any repo outside the mounted workspace (`sbx`
+only injects identity into an already-git workspace's local `.git/config`).
+
 ## config/
 
 `config/mise/` mirrors `~/.config/mise/`, `config/fish/` mirrors `~/.config/fish/`
 and `config/vscode-server/` mirrors `~/.vscode-server/`; all three are copied into
-the image the same way. Unlike `preset/`, `config/` is committed: it defines the
+the image the same way. Unlike `kit/`, `config/` is committed: it defines the
 reproducible toolchain and environment the template ships with, not personal
 configuration.
 
