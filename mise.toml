@@ -8,7 +8,9 @@
 #   BASE_VARIANT=shell mise run          # the agent-less variant
 #   MISE_VERSION=v2026.8.1 mise run      # override the pin in the Dockerfile
 #   mise run build                       # stop after `docker build`
-#   sbx run -t sbx-preset:claude-code claude --kit ./kit/claude/ --kit ./kit/git/ .
+#   sbx create --name myproject -t sbx-preset:claude-code \
+#     --kit ./kit/claude/ --kit ./kit/git/ claude /path/to/project
+#   sbx run --name myproject             # attach later, from anywhere
 #
 # Variables are read from the environment, e.g. `FOO=bar mise run` (see
 # todo.md for a known bug with this in shells where mise is already

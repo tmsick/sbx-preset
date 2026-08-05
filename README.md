@@ -12,7 +12,11 @@ Tasks are defined in `mise.toml`; run `mise trust` once per clone before the fir
 
 ```sh
 mise run                    # build, save and load the template
-sbx run -t sbx-preset:claude-code claude --kit ./kit/claude/ --kit ./kit/git/ .
+
+# from this directory, create a sandbox for another project's workspace
+sbx create --name myproject -t sbx-preset:claude-code \
+  --kit ./kit/claude/ --kit ./kit/git/ claude /path/to/project
+sbx run --name myproject    # attach later, from anywhere
 ```
 
 Other tasks: `build`, `save`, `clean`, `kit:init`.
