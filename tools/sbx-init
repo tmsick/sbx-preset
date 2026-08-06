@@ -11,7 +11,7 @@ otherwise means coming back here first.
 
 Two subcommands:
 
-    sbx-init [PATH]         create a sandbox for PATH (default: .)
+    sbx-init PATH           create a sandbox for PATH
     sbx-init allow DOMAIN   allow a domain, now and for future sandboxes
 
 Every kit under kit/ goes to every sandbox. kit-opt/ holds the ones only
@@ -280,7 +280,10 @@ def main():
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("path", nargs="?", default=".", metavar="PATH")
+    # Required rather than defaulting to ".": a sandbox created against the
+    # wrong tree does not fail, it succeeds quietly, and `sbx create` reads
+    # an omitted path as "provision an empty workspace" rather than "here".
+    parser.add_argument("path", metavar="PATH")
     parser.add_argument("--agent", default="claude", help="default: claude")
     parser.add_argument("--template", help="override the sbx-preset variant")
     parser.add_argument("--name", help="default: sbx's own <agent>-<workdir>")
