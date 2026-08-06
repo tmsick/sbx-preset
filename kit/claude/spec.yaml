@@ -4,7 +4,7 @@
 #
 # files/home/.claude/CLAUDE.md is gitignored -- see .gitignore -- and must
 # exist locally before this kit is usable; only this spec.yaml is committed.
-schemaVersion: "1"
+schemaVersion: "2"
 kind: mixin
 name: claude-config
 displayName: Personal Claude Code config

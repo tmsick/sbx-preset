@@ -23,10 +23,6 @@ mise run`) silently don't work once mise has been activated in that shell --
   (`sbx-init allow DOMAIN`), and the two global `context7.com` rules can then
   be dropped with `sbx policy rm`.
 
-- `kit/claude/` and `kit/git/` are still `schemaVersion: "1"`. Valid, but v2
-  is current (`kit/net/` uses it); migrate when convenient -- v1's
-  `network.allowedDomains` already warns and maps to `caps.network.allow`.
-
 - `tools/sbx-init` never publishes the kits, so it only works on this
   machine's clone. A second machine would want `sbx kit push` to an OCI
   registry or a `git+https://...#dir=` reference instead -- both drop the
