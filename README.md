@@ -73,6 +73,19 @@ gitignored. `sbx kit validate ./kit/<name>/` checks the artifact is well-formed.
 Run `mise run kit:init` once per clone to scaffold the `files/home/` dirs, then
 drop `CLAUDE.md`, `.gitconfig` and `.gitignore_global` straight in.
 
+Two things to know before running `sbx kit add` by hand. **Give it an absolute
+path.** Adding a kit recreates the container, and doing so re-resolves the
+references the sandbox was created with -- a relative one resolves against a
+different directory the second time around and the recreate fails outright
+(`./kit/net` came back as `$HOME/kit/net`). `sbx-init` passes absolute paths
+for this reason. **Nothing reports which kits a sandbox has**, either: `sbx ls
+--json` carries only name, id, agent, status and workspaces, while `sbx policy
+ls SANDBOX --source kit` names every rule `kit:<sandbox>` and shows the merged
+resources rather than the kits behind them -- accumulating a row per recreate,
+and saying nothing at all about a kit that only injects files. Re-adding a kit
+that is already attached is refused (exit 1, `duplicate kit name`), which is
+the practical way to find out.
+
 `kit/claude/` injects `files/home/.claude/CLAUDE.md` to `/home/agent/.claude/CLAUDE.md`.
 Only `CLAUDE.md` and `rules/` are worth injecting this way; `sbx` rewrites
 `~/.claude/settings.json` and `~/.claude.json` itself, and bind-mounts `~/.claude/skills`

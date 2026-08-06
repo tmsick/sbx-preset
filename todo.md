@@ -22,13 +22,6 @@
   proxy that isn't there rather than traffic worth allowing -- worth
   confirming before it gets allowlisted by reflex.
 
-- Which `kit-opt/` kits a project wants has to be retyped on every
-  `sbx-init . --with ...`, so recreating a sandbox means remembering what the
-  last one had. A thin record on the project side would settle it -- a
-  `.sbx/kits` naming them, read by `sbx-init` -- keeping the kits themselves
-  here and only the selection out there. Only worth doing if sandboxes get
-  recreated often enough for the retyping to bite.
-
 - Kits are experimental and their schema moves without a version bump to
   signal it: sbx v0.38.0 renamed `caps.network.*` to `permissions.network.*`
   and `commands.*` to `setup.*`, both still under `schemaVersion: "2"`, and
