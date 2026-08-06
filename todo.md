@@ -18,10 +18,9 @@ mise run`) silently don't work once mise has been activated in that shell --
   `docker build`s before merge.
 
 - `kit/net/`'s allowlist only carries context7 so far -- the domains that had
-  been added to the *global* policy by hand, which is how they were found.
+  been added to the _global_ policy by hand, which is how they were found.
   Anything else this setup routinely needs should move here as it comes up
-  (`sbx-init allow DOMAIN`), and the two global `context7.com` rules can then
-  be dropped with `sbx policy rm`.
+  (`sbx-init allow DOMAIN`).
 
 - `tools/sbx-init` never publishes the kits, so it only works on this
   machine's clone. A second machine would want `sbx kit push` to an OCI
