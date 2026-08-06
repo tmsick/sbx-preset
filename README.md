@@ -42,6 +42,7 @@ that in, so a sandbox gets created from the project it is for:
 
 ```sh
 sbx-init .                       # the same sbx create, with paths filled in
+sbx-init . --with figma          # plus kit-opt/figma/ (repeatable, comma-separated)
 sbx-init . --profile strict      # unrecognized flags go on to `sbx create`
 sbx-init --agent shell .         # picks the matching sbx-preset variant
 sbx-init --dry-run .             # print the command instead of running it
@@ -56,7 +57,8 @@ the file, with no path back here.
 to the sandbox holding the current directory, which covers both halves of the
 problem: the kit reaches an existing sandbox only through `sbx kit add`, and
 that recreates its container, while a scoped policy rule takes effect
-immediately but is forgotten when the sandbox goes away.
+immediately but is forgotten when the sandbox goes away. `--with figma` writes
+to `kit-opt/figma/` instead, for a domain that shouldn't reach every sandbox.
 
 ## kit/
 
@@ -93,6 +95,21 @@ every `sbx create`. Its rules are scoped to the sandbox they were applied to, un
 sandbox on the host inherits; `sbx policy ls SANDBOX --source kit` shows them. Only
 what `sbx policy init balanced` doesn't already allow belongs here. Unlike the other
 two kits it has no `files/`, so the list itself is committed.
+
+## kit-opt/
+
+`kit-opt/<service>/` holds the kits only some projects want, attached with
+`sbx-init . --with <service>`. Everything in `kit/` goes to every sandbox;
+nothing in `kit-opt/` goes anywhere unless it is asked for. Which of the two a
+kit lives in is the whole difference between them -- there is no naming
+convention to remember, and `sbx kit validate ./kit/*/ ./kit-opt/*/` covers
+both.
+
+They are named after the service (`figma/`, not `net-figma/`) because a kit is
+the unit of *capability*, not of mechanism: if Figma later needs an API token
+as well as network reach, `environment.variables` goes in the same kit. Splitting
+by service rather than by project is deliberate -- a kit per project would not
+survive two projects wanting Figma.
 
 ## config/
 

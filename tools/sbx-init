@@ -14,6 +14,9 @@ Two subcommands:
     sbx-init [PATH]         create a sandbox for PATH (default: .)
     sbx-init allow DOMAIN   allow a domain, now and for future sandboxes
 
+Every kit under kit/ goes to every sandbox. kit-opt/ holds the ones only
+some projects want, named after the service they reach (`--with figma`).
+
 Unrecognized flags are handed to `sbx create` as-is (`sbx-init . --profile
 strict`); it rejects the ones it doesn't know, so typos still surface.
 
@@ -33,7 +36,12 @@ from pathlib import Path
 # nothing typed at the prompt. Install it as a symlink, not a hardlink: a
 # hardlink is just another name for the file, with no path back to the repo.
 REPO = Path(__file__).resolve().parent.parent
+
+# Two directories rather than one with a naming convention: which kits are
+# attached by default is then a property of where a kit sits, not of how it
+# was named, and kits() keeps meaning "all of them".
 KIT_DIR = REPO / "kit"
+OPT_KIT_DIR = REPO / "kit-opt"
 NET_KIT = KIT_DIR / "net"
 
 IMAGE = "sbx-preset"
@@ -64,14 +72,35 @@ def sbx_json(*args):
     return json.loads(out)
 
 
-def kits():
-    """Every kit in the repo, in a stable order.
+def kits(directory):
+    """Every kit under a directory, in a stable order.
 
     Discovered rather than listed so a kit added later (or a `files/` that
     hasn't been filled in yet -- kits validate without one) needs no edit
     here.
     """
-    return sorted(d for d in KIT_DIR.iterdir() if (d / "spec.yaml").is_file())
+    if not directory.is_dir():
+        return []
+    return sorted(d for d in directory.iterdir() if (d / "spec.yaml").is_file())
+
+
+def opt_kits(names):
+    """Resolve --with names against kit-opt/."""
+    available = {d.name: d for d in kits(OPT_KIT_DIR)}
+    chosen = []
+    for name in names:
+        if name not in available:
+            fail(
+                f"no kit-opt/{name}/",
+                f"available: {', '.join(available) or '(none)'}",
+            )
+        chosen.append(available[name])
+    return chosen
+
+
+def with_names(values):
+    """Flatten repeated and comma-separated --with values."""
+    return [name for value in values for name in value.split(",") if name]
 
 
 def template_loaded(template):
@@ -114,8 +143,8 @@ def sandbox_for(path):
     return name
 
 
-def merge_allowlist(domains, dry_run=False):
-    """Merge domains into permissions.network.allow in the net kit's spec.yaml.
+def merge_allowlist(kit, domains, dry_run=False):
+    """Merge domains into permissions.network.allow in a kit's spec.yaml.
 
     Keyed on the `allow:` line alone, so it survives the parent key being
     renamed -- which kit-spec did between sbx v0.37.1 and v0.38.0 (`caps` ->
@@ -127,7 +156,7 @@ def merge_allowlist(domains, dry_run=False):
     here -- one quoted entry per line, sorted -- and `sbx kit validate` in
     cmd_allow() catches it if that ever stops holding.
     """
-    spec = NET_KIT / "spec.yaml"
+    spec = kit / "spec.yaml"
     lines = spec.read_text().splitlines()
     key = next((i for i, l in enumerate(lines) if l.strip() == "allow:"), None)
     if key is None:
@@ -178,7 +207,7 @@ def cmd_create(args, extra):
             )
 
     cmd = ["sbx", "create", "--template", template]
-    for kit in kits():
+    for kit in kits(KIT_DIR) + opt_kits(with_names(args.with_)):
         cmd += ["--kit", str(kit)]
     if args.name:
         cmd += ["--name", args.name]
@@ -193,13 +222,17 @@ def cmd_allow(args, extra):
     if extra:
         fail(f"unexpected arguments: {shlex.join(extra)}")
 
-    spec = NET_KIT / "spec.yaml"
-    added = merge_allowlist(args.domains, args.dry_run)
+    # Which kit the domain belongs to is a judgement the caller has to make:
+    # kit/net/ reaches every sandbox, a kit-opt/ one only those that asked
+    # for it.
+    kit = opt_kits([args.with_])[0] if args.with_ else NET_KIT
+    spec = kit / "spec.yaml"
+    added = merge_allowlist(kit, args.domains, args.dry_run)
     report = "added " + ", ".join(added) if added else "already listed"
     # flush: run() reports on stderr, so an unflushed stdout would print the
     # commands before the edit they follow.
     print(f"{spec.relative_to(REPO)}: {report}", flush=True)
-    run(["sbx", "kit", "validate", str(NET_KIT)], args.dry_run)
+    run(["sbx", "kit", "validate", str(kit)], args.dry_run)
 
     # The kit only reaches an existing sandbox through `sbx kit add`, which
     # recreates its container. A scoped policy rule is the same allow without
@@ -230,6 +263,12 @@ def main():
         parser.add_argument(
             "--sandbox", help="default: the one holding the current directory"
         )
+        parser.add_argument(
+            "--with",
+            dest="with_",
+            metavar="SERVICE",
+            help="write to kit-opt/SERVICE instead of kit/net",
+        )
         parser.add_argument("--dry-run", action="store_true", help="print commands only")
         args, extra = parser.parse_known_args(argv[1:])
         return cmd_allow(args, extra)
@@ -243,6 +282,14 @@ def main():
     parser.add_argument("--agent", default="claude", help="default: claude")
     parser.add_argument("--template", help="override the sbx-preset variant")
     parser.add_argument("--name", help="default: sbx's own <agent>-<workdir>")
+    parser.add_argument(
+        "--with",
+        dest="with_",
+        action="append",
+        default=[],
+        metavar="SERVICE",
+        help="also attach kit-opt/SERVICE (repeatable, or comma-separated)",
+    )
     parser.add_argument("--dry-run", action="store_true", help="print commands only")
     args, extra = parser.parse_known_args(argv)
     return cmd_create(args, extra)

@@ -1,0 +1,15 @@
+# Attached only when asked for: `sbx-init . --with figma`.
+#
+# The allowlist conventions, and why entries should follow a recorded
+# refusal rather than a guess, are in kit/net/spec.yaml. This list starts at
+# the domain the service is obviously reached on; grow it from `sbx policy
+# log` when something here turns out not to be enough.
+schemaVersion: "2"
+kind: mixin
+name: net-figma
+displayName: Figma network access
+description: "Allows Figma, for sandboxes that need it"
+permissions:
+  network:
+    allow:
+      - "**.figma.com:443"

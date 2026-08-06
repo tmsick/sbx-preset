@@ -1,0 +1,17 @@
+# Attached only when asked for: `sbx-init . --with atlassian`.
+#
+# The allowlist conventions, and why entries should follow a recorded
+# refusal rather than a guess, are in kit/net/spec.yaml. Two domains rather
+# than one because a Cloud site lives on <site>.atlassian.net while the REST
+# API is served from api.atlassian.com; grow the list from `sbx policy log`
+# when this turns out not to be enough.
+schemaVersion: "2"
+kind: mixin
+name: net-atlassian
+displayName: Atlassian network access
+description: "Allows Jira/Confluence Cloud, for sandboxes that need it"
+permissions:
+  network:
+    allow:
+      - "**.atlassian.com:443"
+      - "**.atlassian.net:443"
