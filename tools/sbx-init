@@ -30,6 +30,7 @@ import shlex
 import subprocess
 import sys
 from pathlib import Path
+from typing import NoReturn
 
 # resolve() follows the symlink this is invoked through, so the repository is
 # derived from the script's own real location -- nothing hardcoded here and
@@ -51,7 +52,7 @@ IMAGE = "sbx-preset"
 VARIANTS = {"claude": "claude-code", "shell": "shell"}
 
 
-def fail(msg, *hints):
+def fail(msg, *hints) -> NoReturn:
     print(f"sbx-init: {msg}", file=sys.stderr)
     for hint in hints:
         print(f"  {hint}", file=sys.stderr)
@@ -133,8 +134,7 @@ def sandbox_for(path):
             # Read-only extra workspaces carry a :ro suffix on the CLI; don't
             # rely on it being stripped here.
             for suffix in (":ro", ":rw"):
-                if workspace.endswith(suffix):
-                    workspace = workspace[: -len(suffix)]
+                workspace = workspace.removesuffix(suffix)
             candidate = Path(workspace)
             if (path == candidate or candidate in path.parents) and len(
                 workspace
@@ -269,7 +269,9 @@ def main():
             metavar="SERVICE",
             help="write to kit-opt/SERVICE instead of kit/net",
         )
-        parser.add_argument("--dry-run", action="store_true", help="print commands only")
+        parser.add_argument(
+            "--dry-run", action="store_true", help="print commands only"
+        )
         args, extra = parser.parse_known_args(argv[1:])
         return cmd_allow(args, extra)
 
