@@ -1,15 +1,14 @@
 # syntax=docker/dockerfile:1
 
-# Custom template for Docker Sandboxes: adds mise on top of the stock agent
-# environment. Must extend docker/sandbox-templates:<variant> rather than a
-# generic base image. Defaults to claude-code; pass --build-arg
-# BASE_VARIANT=shell for the agent-less variant used by `sbx run shell`.
+# Custom Docker Sandboxes template: mise on top of the stock agent environment.
+# Must extend docker/sandbox-templates:<variant>, not a generic base image.
+# Defaults to claude-code; --build-arg BASE_VARIANT=shell gives the agent-less
+# variant used by `sbx run shell`.
 #
-# Always extends the `-docker` counterpart (e.g. claude-code-docker), not the
-# plain variant: only that tag bakes in a full Docker Engine (privileged mode,
-# dedicated /var/lib/docker volume, dockerd autostart) -- the same one `sbx
-# create`/`sbx run` use by default when no custom template is given. Building
-# on the plain variant would silently drop Docker from the template.
+# Always the `-docker` counterpart (e.g. claude-code-docker): only that tag
+# bakes in a full Docker Engine (privileged mode, dedicated /var/lib/docker
+# volume, dockerd autostart), the same one `sbx create`/`run` use by default.
+# The plain variant would silently drop Docker from the template.
 ARG BASE_VARIANT=claude-code
 FROM docker/sandbox-templates:${BASE_VARIANT}-docker AS base
 
@@ -18,10 +17,10 @@ USER root
 # Opt into pipefail so a broken `curl | sh` below still fails the build.
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# curl/ca-certificates: mise installer. libatomic1: required at runtime by
-# pnpm's standalone binary (and other Node.js SEA builds); missing on the
-# minimal Ubuntu base (see https://github.com/pnpm/pnpm/issues/11531).
-# fish: the sandbox's default shell, set below.
+# curl/ca-certificates: mise installer. libatomic1: needed at runtime by pnpm's
+# standalone binary (and other Node.js SEA builds), missing on the minimal
+# Ubuntu base (https://github.com/pnpm/pnpm/issues/11531). fish: the sandbox's
+# default shell, set below.
 RUN apt-get update -y \
     && apt-get install -y --no-install-recommends \
     curl \
@@ -34,14 +33,14 @@ RUN apt-get update -y \
 RUN usermod --shell /usr/bin/fish agent
 ENV SHELL=/usr/bin/fish
 
-# Official installer, per mise's own guidance for containers. Pinned so a
-# rebuild doesn't silently pick up a new release; override with
-# --build-arg MISE_VERSION=... to try another one.
+# Official installer, per mise's guidance for containers. Pinned so a rebuild
+# doesn't silently pick up a new release; override with --build-arg
+# MISE_VERSION=... to try another one.
 ARG MISE_VERSION=v2026.8.2
 
 # Install as root into a shared path (the installer's default ~/.local/bin
-# would land in /root). Kept as ARG, not ENV, so it doesn't leak into the
-# image and redirect a later `curl https://mise.run | sh` run by an agent.
+# would land in /root). Kept as ARG, not ENV, so it doesn't leak into the image
+# and redirect a later `curl https://mise.run | sh` run by an agent.
 RUN curl -fsSL https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh \
     && mise --version
 
@@ -59,26 +58,23 @@ RUN echo 'eval "$(mise activate bash)"' >> /home/agent/.bashrc
 COPY --chown=agent:agent config/fish/ /home/agent/.config/fish/
 
 # config/mise/ mirrors ~/.config/mise/, mise's default global config location.
-# Committed (unlike kit/, which is per-user and gitignored): this is the
-# template's own reproducible toolchain, not personal config.
 COPY --chown=agent:agent config/mise/ /home/agent/.config/mise/
 
-# Installs everything pinned in config.toml at build time so it's ready
-# immediately rather than on first `mise install` inside the sandbox.
+# Install everything pinned in config.toml now, rather than on first
+# `mise install` inside the sandbox.
 RUN mise install
 
-# `mise activate` (in config.fish) only wires up shims/env hooks, not shell
-# completions -- fish needs its own script autoloaded from completions/.
-# Generated at build time so it tracks whatever MISE_VERSION is pinned above.
+# `mise activate` (in config.fish) wires up shims and env hooks but not shell
+# completions -- fish autoloads those from completions/. Generated here so they
+# track whatever MISE_VERSION is pinned above.
 RUN mkdir -p /home/agent/.config/fish/completions \
     && mise completion fish > /home/agent/.config/fish/completions/mise.fish
 
 # Seed VS Code Server's remote settings so its integrated terminal defaults to
-# fish. Needed because sandboxd forces SHELL=/bin/bash into every sandbox at
-# creation, overriding both this image's ENV SHELL and the usermod above; VS
-# Code Server only writes this file if it's missing, so seeding it here
-# survives untouched into every sandbox (same mechanism Dev Containers uses
-# for customizations.vscode.settings).
+# fish: sandboxd forces SHELL=/bin/bash into every sandbox at creation,
+# overriding both this image's ENV SHELL and the usermod above. VS Code Server
+# writes this file only if it's missing, so the seed survives untouched into
+# every sandbox.
 COPY --chown=agent:agent config/vscode-server/ /home/agent/.vscode-server/
 
 # claude-code's CMD launches `claude` directly; override to fish only for the

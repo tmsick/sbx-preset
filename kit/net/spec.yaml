@@ -1,35 +1,28 @@
-# Network allowlist applied at sandbox creation (`--kit`) or via `sbx kit
-# add`, so the domains this setup routinely needs stop being a series of
-# `sbx policy allow network` run by hand after every `sbx create`.
+# Network allowlist applied at sandbox creation (`--kit`) or via `sbx kit add`.
+# Rules from a kit are scoped to the sandbox it was applied to, unlike `sbx
+# policy allow network` without --sandbox, which edits the global policy every
+# sandbox on this host inherits; `sbx policy ls SANDBOX --source kit` shows the
+# ones from here.
 #
-# Rules from a kit are scoped to the sandbox the kit was applied to, unlike
-# `sbx policy allow network` without --sandbox, which edits the global policy
-# every sandbox on this host inherits. `sbx policy ls SANDBOX --source kit`
-# shows the ones that came from here.
+# Only what `sbx policy init balanced` doesn't already cover belongs here -- it
+# ships ~190 allow entries (github, npm, pypi, crates.io, ubuntu, docker
+# registries, the agent APIs, ...); check with `sbx policy ls --type network
+# --decision allow --json` first.
 #
-# Only what `sbx policy init balanced` doesn't already cover belongs here --
-# it ships ~190 allow entries (github, npm, pypi, crates.io, ubuntu, docker
-# registries, the agent APIs, ...). Check with
-# `sbx policy ls --type network --decision allow --json` before adding.
+# Grow the list from evidence, not guesses: an entry nobody has been blocked on
+# is network reach handed to every agent for nothing. `sbx policy log [SANDBOX]`
+# reports what the proxy actually refused, and the daemon log under
+# ~/Library/Application Support/com.docker.sandboxes/ keeps those records once
+# the log has rolled. context7 is here for that reason.
 #
-# The list grows from evidence, not from guesses: an entry nobody has been
-# blocked on is network reach handed to every agent for nothing. `sbx policy
-# log [SANDBOX]` reports what the proxy actually refused (the daemon log
-# under ~/Library/Application Support/com.docker.sandboxes/ keeps the same
-# records once the log has rolled), so a connectivity failure inside a
-# sandbox is the thing that justifies a new line here. context7 is here for
-# that reason -- it had been added to the global policy by hand, which is
-# how it was found.
+# Entries take an optional :PORT suffix; without one, every port is allowed, and
+# `**.` covers the domain itself plus any depth of subdomain (`*.` is exactly one
+# label and excludes the apex). Ports are matched separately, which is why github
+# needs a line at all: `balanced` allows github.com:443, so HTTPS remotes work
+# out of the box, but not port 22, and an SSH remote is refused without this.
 #
-# Entries take an optional :PORT suffix; without one, every port is allowed,
-# and `**.` covers the domain itself plus any depth of subdomain (`*.` is
-# exactly one label and excludes the apex). Ports are matched separately,
-# which is why github needs a line here at all: `balanced` allows
-# github.com:443, so HTTPS remotes work out of the box, but port 22 is not
-# in it and an SSH remote is refused without this.
-# `tools/sbx-init allow DOMAIN` appends here (and applies the same rule live
-# to the sandbox owning the current directory), so keep the list one quoted
-# entry per line, sorted -- that's the shape it rewrites.
+# `tools/sbx-init allow DOMAIN` appends here, so keep the list one quoted entry
+# per line, sorted -- that's the shape it rewrites.
 schemaVersion: "2"
 kind: mixin
 name: net-default

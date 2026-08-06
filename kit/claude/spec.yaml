@@ -1,9 +1,8 @@
-# Injects personal Claude Code configuration (files/home/.claude/) into a
-# sandbox at creation (`--kit`) or via `sbx kit add`, so editing it takes
-# effect on the next `sbx create`/`run` with no image rebuild.
+# Injects personal Claude Code configuration (files/home/.claude/) at sandbox
+# creation (`--kit`) or via `sbx kit add`.
 #
-# files/home/.claude/CLAUDE.md is gitignored -- see .gitignore -- and must
-# exist locally before this kit is usable; only this spec.yaml is committed.
+# Only this spec.yaml is committed; files/home/.claude/CLAUDE.md is gitignored
+# and must exist locally before the kit is usable.
 schemaVersion: "2"
 kind: mixin
 name: claude-config

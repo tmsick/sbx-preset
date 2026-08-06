@@ -1,7 +1,6 @@
-# kit/<name>/files/ holds the personal content a kit injects (kit/claude/'s
-# CLAUDE.md, say). spec.yaml stays committed -- it's just the declarative
-# wrapper -- but the files/ tree underneath it is per-user and stays out of
-# git.
+# The personal content a kit injects (kit/claude/'s CLAUDE.md, say). spec.yaml
+# stays committed -- it's just the declarative wrapper -- but the files/ tree
+# underneath it is per-user.
 /kit/*/files/
 
 # Image tarballs staged for `sbx template load`.
