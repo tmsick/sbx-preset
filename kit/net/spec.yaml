@@ -12,6 +12,15 @@
 # registries, the agent APIs, ...). Check with
 # `sbx policy ls --type network --decision allow --json` before adding.
 #
+# The list grows from evidence, not from guesses: an entry nobody has been
+# blocked on is network reach handed to every agent for nothing. `sbx policy
+# log [SANDBOX]` reports what the proxy actually refused (the daemon log
+# under ~/Library/Application Support/com.docker.sandboxes/ keeps the same
+# records once the log has rolled), so a connectivity failure inside a
+# sandbox is the thing that justifies a new line here. context7 is here for
+# that reason -- it had been added to the global policy by hand, which is
+# how it was found.
+#
 # Entries take an optional :PORT suffix; without one, every port is allowed.
 # `tools/sbx-init allow DOMAIN` appends here (and applies the same rule live
 # to the sandbox owning the current directory), so keep the list one quoted
@@ -21,7 +30,7 @@ kind: mixin
 name: net-default
 displayName: Default network allowlist
 description: "Allows the domains this setup routinely needs beyond the balanced policy"
-caps:
+permissions:
   network:
     allow:
       - "*.context7.com:443"

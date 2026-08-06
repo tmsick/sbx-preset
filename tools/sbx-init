@@ -115,7 +115,11 @@ def sandbox_for(path):
 
 
 def merge_allowlist(domains, dry_run=False):
-    """Merge domains into caps.network.allow in the net kit's spec.yaml.
+    """Merge domains into permissions.network.allow in the net kit's spec.yaml.
+
+    Keyed on the `allow:` line alone, so it survives the parent key being
+    renamed -- which kit-spec did between sbx v0.37.1 and v0.38.0 (`caps` ->
+    `permissions`).
 
     A line edit rather than a YAML round-trip: the standard library has no
     YAML parser, and a hand-rolled one would reformat the comments that carry
