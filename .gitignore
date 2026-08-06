@@ -6,3 +6,6 @@
 
 # Image tarballs staged for `sbx template load`.
 /tmp/
+
+# Byte-compiled tools/ scripts.
+__pycache__/

@@ -13,10 +13,9 @@ Tasks are defined in `mise.toml`; run `mise trust` once per clone before the fir
 ```sh
 mise run                    # build, save and load the template
 
-# from this directory, create a sandbox for another project's workspace
-sbx create --name myproject -t sbx-preset:claude-code \
-  --kit ./kit/claude/ --kit ./kit/git/ claude /path/to/project
-sbx run --name myproject    # attach later, from anywhere
+cd /path/to/project         # then, from the project itself -- see tools/
+sbx-init .
+sbx run --name claude-project   # attach later, from anywhere
 ```
 
 Other tasks: `build`, `save`, `clean`, `kit:init`.
@@ -27,6 +26,37 @@ Variables (read from the environment): `IMAGE`, `BASE_VARIANT`, `TAG`, `MISE_VER
 BASE_VARIANT=shell mise run          # the agent-less variant used by `sbx run shell`
 MISE_VERSION=v2026.8.1 mise run      # override the pin in the Dockerfile
 ```
+
+## tools/
+
+`tools/sbx-init` is the everyday entry point. Symlink it onto `PATH` once:
+
+```sh
+ln -s "$PWD/tools/sbx-init" ~/bin/sbx-init
+```
+
+Creating a sandbox by hand means naming this repository three times over --
+`-t sbx-preset:claude-code` plus a `--kit` per kit, all paths inside it -- which
+is why it otherwise has to happen from this directory. `sbx-init .` fills all of
+that in, so a sandbox gets created from the project it is for:
+
+```sh
+sbx-init .                       # the same sbx create, with paths filled in
+sbx-init . --profile strict      # unrecognized flags go on to `sbx create`
+sbx-init --agent shell .         # picks the matching sbx-preset variant
+sbx-init --dry-run .             # print the command instead of running it
+```
+
+The repository path is neither typed nor hardcoded: `Path(__file__).resolve()`
+follows the symlink, so the script finds the kits from its own real location.
+Install it as a symlink, not a hardlink -- a hardlink is just another name for
+the file, with no path back here.
+
+`sbx-init allow DOMAIN` adds a domain to `kit/net/` *and* applies the same rule
+to the sandbox holding the current directory, which covers both halves of the
+problem: the kit reaches an existing sandbox only through `sbx kit add`, and
+that recreates its container, while a scoped policy rule takes effect
+immediately but is forgotten when the sandbox goes away.
 
 ## kit/
 
@@ -55,6 +85,14 @@ kit put there first; landing content at `~/.config/git/{config,ignore}` instead 
 it shadowed, since `core.excludesFile` always wins and that file is never read. It also
 covers `git init` in the sandbox or any repo outside the mounted workspace -- `sbx` only
 injects identity into an already-git workspace's local `.git/config`.
+
+`kit/net/` carries a network allowlist rather than files, so the domains this setup
+routinely needs stop being a series of `sbx policy allow network` run by hand after
+every `sbx create`. Its rules are scoped to the sandbox they were applied to, unlike
+`sbx policy allow network` without `--sandbox`, which edits the global policy every
+sandbox on the host inherits; `sbx policy ls SANDBOX --source kit` shows them. Only
+what `sbx policy init balanced` doesn't already allow belongs here. Unlike the other
+two kits it has no `files/`, so the list itself is committed.
 
 ## config/
 

@@ -1,0 +1,253 @@
+#!/usr/bin/env python3
+"""Create a sandbox from this repo's template and kits, from anywhere.
+
+    ln -s "$PWD/tools/sbx-init" ~/bin/sbx-init   # once
+    cd /some/project && sbx-init .               # from then on
+
+The point is that neither the repository path nor the kit list has to be
+typed: `sbx create` needs `-t sbx-preset:<variant>` plus a `--kit` per kit,
+all of them paths inside this repository, which is why creating a sandbox
+otherwise means coming back here first.
+
+Two subcommands:
+
+    sbx-init [PATH]         create a sandbox for PATH (default: .)
+    sbx-init allow DOMAIN   allow a domain, now and for future sandboxes
+
+Unrecognized flags are handed to `sbx create` as-is (`sbx-init . --profile
+strict`); it rejects the ones it doesn't know, so typos still surface.
+
+Stays on the standard library and on 3.9 syntax so it runs under whichever
+python3 the target project's mise config happens to put on PATH.
+"""
+
+import argparse
+import json
+import shlex
+import subprocess
+import sys
+from pathlib import Path
+
+# resolve() follows the symlink this is invoked through, so the repository is
+# derived from the script's own real location -- nothing hardcoded here and
+# nothing typed at the prompt. Install it as a symlink, not a hardlink: a
+# hardlink is just another name for the file, with no path back to the repo.
+REPO = Path(__file__).resolve().parent.parent
+KIT_DIR = REPO / "kit"
+NET_KIT = KIT_DIR / "net"
+
+IMAGE = "sbx-preset"
+
+# The Dockerfile's BASE_VARIANT (its final-<variant> stages) that goes with
+# each agent. Anything else needs an explicit --template.
+VARIANTS = {"claude": "claude-code", "shell": "shell"}
+
+
+def fail(msg, *hints):
+    print(f"sbx-init: {msg}", file=sys.stderr)
+    for hint in hints:
+        print(f"  {hint}", file=sys.stderr)
+    sys.exit(1)
+
+
+def run(cmd, dry_run=False):
+    print(f"+ {shlex.join(cmd)}", file=sys.stderr)
+    if dry_run:
+        return
+    subprocess.run(cmd, check=True)
+
+
+def sbx_json(*args):
+    out = subprocess.run(
+        ["sbx", *args, "--json"], check=True, capture_output=True, text=True
+    ).stdout
+    return json.loads(out)
+
+
+def kits():
+    """Every kit in the repo, in a stable order.
+
+    Discovered rather than listed so a kit added later (or a `files/` that
+    hasn't been filled in yet -- kits validate without one) needs no edit
+    here.
+    """
+    return sorted(d for d in KIT_DIR.iterdir() if (d / "spec.yaml").is_file())
+
+
+def template_loaded(template):
+    """Whether sandboxd's own image store holds this template.
+
+    Worth checking up front: sandboxd keeps its images separate from the host
+    Docker daemon, so a template built but never `sbx template load`ed is
+    missing here, and `sbx create` reports that as a failed registry pull.
+    """
+    repository, _, tag = template.partition(":")
+    for image in sbx_json("template", "ls")["images"]:
+        # Locally loaded images come back fully qualified: sbx-preset
+        # lists as docker.io/library/sbx-preset.
+        name = image["repository"].split("/")[-1]
+        if name == repository and image["tag"] == tag:
+            return True
+    return False
+
+
+def sandbox_for(path):
+    """Name of the sandbox holding PATH, or None.
+
+    Matches a workspace itself or any directory under it, longest first, so
+    this works from a subdirectory of the project too.
+    """
+    best = ""
+    name = None
+    for sandbox in sbx_json("ls")["sandboxes"]:
+        for workspace in sandbox.get("workspaces", []):
+            # Read-only extra workspaces carry a :ro suffix on the CLI; don't
+            # rely on it being stripped here.
+            for suffix in (":ro", ":rw"):
+                if workspace.endswith(suffix):
+                    workspace = workspace[: -len(suffix)]
+            candidate = Path(workspace)
+            if (path == candidate or candidate in path.parents) and len(
+                workspace
+            ) > len(best):
+                best, name = workspace, sandbox["name"]
+    return name
+
+
+def merge_allowlist(domains, dry_run=False):
+    """Merge domains into caps.network.allow in the net kit's spec.yaml.
+
+    A line edit rather than a YAML round-trip: the standard library has no
+    YAML parser, and a hand-rolled one would reformat the comments that carry
+    this repo's reasoning. spec.yaml documents the one shape written back
+    here -- one quoted entry per line, sorted -- and `sbx kit validate` in
+    cmd_allow() catches it if that ever stops holding.
+    """
+    spec = NET_KIT / "spec.yaml"
+    lines = spec.read_text().splitlines()
+    key = next((i for i, l in enumerate(lines) if l.strip() == "allow:"), None)
+    if key is None:
+        fail(f"{spec}: no `allow:` key to merge into")
+
+    indent = " " * (len(lines[key]) - len(lines[key].lstrip()) + 2)
+    end = key + 1
+    while end < len(lines) and lines[end].startswith(indent + "- "):
+        end += 1
+
+    current = [l.strip()[2:].strip().strip('"') for l in lines[key + 1 : end]]
+    added = sorted(set(domains) - set(current))
+    if not dry_run:
+        lines[key + 1 : end] = [
+            f'{indent}- "{d}"' for d in sorted(set(current) | set(domains))
+        ]
+        spec.write_text("\n".join(lines) + "\n")
+    return added
+
+
+def cmd_create(args, extra):
+    workspace = Path(args.path).resolve()
+    if not workspace.is_dir():
+        fail(f"{workspace} is not a directory")
+
+    existing = sandbox_for(workspace)
+    if existing:
+        print(f"sandbox {existing!r} already covers {workspace}")
+        print(f"attach with: sbx run --name {existing}")
+        return
+
+    template = args.template
+    if not template:
+        variant = VARIANTS.get(args.agent)
+        if not variant:
+            fail(
+                f"no sbx-preset variant for agent {args.agent!r}",
+                "pass --template, or add the variant to the Dockerfile",
+            )
+        template = f"{IMAGE}:{variant}"
+        if not args.dry_run and not template_loaded(template):
+            build = "mise run"
+            if variant != VARIANTS["claude"]:
+                build = f"BASE_VARIANT={variant} {build}"
+            fail(
+                f"template {template} is not loaded into sandboxd",
+                f"build and load it with: {build}   (in {REPO})",
+            )
+
+    cmd = ["sbx", "create", "--template", template]
+    for kit in kits():
+        cmd += ["--kit", str(kit)]
+    if args.name:
+        cmd += ["--name", args.name]
+    # Anything left over goes last, where it reads as an argument to `sbx
+    # create` itself: extra flags (cobra takes them after the positionals)
+    # and extra workspaces (`sbx-init . ../docs:ro`) both land correctly.
+    cmd += [args.agent, str(workspace), *extra]
+    run(cmd, args.dry_run)
+
+
+def cmd_allow(args, extra):
+    if extra:
+        fail(f"unexpected arguments: {shlex.join(extra)}")
+
+    spec = NET_KIT / "spec.yaml"
+    added = merge_allowlist(args.domains, args.dry_run)
+    report = "added " + ", ".join(added) if added else "already listed"
+    # flush: run() reports on stderr, so an unflushed stdout would print the
+    # commands before the edit they follow.
+    print(f"{spec.relative_to(REPO)}: {report}", flush=True)
+    run(["sbx", "kit", "validate", str(NET_KIT)], args.dry_run)
+
+    # The kit only reaches an existing sandbox through `sbx kit add`, which
+    # recreates its container. A scoped policy rule is the same allow without
+    # the recreate, so do that here and leave the kit to cover the next
+    # `sbx-init`.
+    sandbox = args.sandbox or sandbox_for(Path.cwd())
+    if not sandbox:
+        print(f"no sandbox holds {Path.cwd()}; the kit applies at the next sbx-init")
+        return
+    resources = ",".join(args.domains)
+    run(
+        ["sbx", "policy", "allow", "network", "--sandbox", sandbox, resources],
+        args.dry_run,
+    )
+
+
+def main():
+    # Dispatched on the first word rather than through subparsers: the common
+    # call is a bare `sbx-init .`, and argparse can't make a subcommand
+    # optional without making `--dry-run .` ambiguous with it.
+    argv = sys.argv[1:]
+    if argv and argv[0] == "allow":
+        parser = argparse.ArgumentParser(
+            prog="sbx-init allow",
+            description="Allow a domain for the current sandbox and for future ones.",
+        )
+        parser.add_argument("domains", nargs="+", metavar="DOMAIN")
+        parser.add_argument(
+            "--sandbox", help="default: the one holding the current directory"
+        )
+        parser.add_argument("--dry-run", action="store_true", help="print commands only")
+        args, extra = parser.parse_known_args(argv[1:])
+        return cmd_allow(args, extra)
+
+    parser = argparse.ArgumentParser(
+        prog="sbx-init",
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("path", nargs="?", default=".", metavar="PATH")
+    parser.add_argument("--agent", default="claude", help="default: claude")
+    parser.add_argument("--template", help="override the sbx-preset variant")
+    parser.add_argument("--name", help="default: sbx's own <agent>-<workdir>")
+    parser.add_argument("--dry-run", action="store_true", help="print commands only")
+    args, extra = parser.parse_known_args(argv)
+    return cmd_create(args, extra)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except subprocess.CalledProcessError as err:
+        sys.exit(err.returncode)
+    except KeyboardInterrupt:
+        sys.exit(130)

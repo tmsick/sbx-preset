@@ -1,0 +1,28 @@
+# Network allowlist applied at sandbox creation (`--kit`) or via `sbx kit
+# add`, so the domains this setup routinely needs stop being a series of
+# `sbx policy allow network` run by hand after every `sbx create`.
+#
+# Rules from a kit are scoped to the sandbox the kit was applied to, unlike
+# `sbx policy allow network` without --sandbox, which edits the global policy
+# every sandbox on this host inherits. `sbx policy ls SANDBOX --source kit`
+# shows the ones that came from here.
+#
+# Only what `sbx policy init balanced` doesn't already cover belongs here --
+# it ships ~190 allow entries (github, npm, pypi, crates.io, ubuntu, docker
+# registries, the agent APIs, ...). Check with
+# `sbx policy ls --type network --decision allow --json` before adding.
+#
+# Entries take an optional :PORT suffix; without one, every port is allowed.
+# `tools/sbx-init allow DOMAIN` appends here (and applies the same rule live
+# to the sandbox owning the current directory), so keep the list one quoted
+# entry per line, sorted -- that's the shape it rewrites.
+schemaVersion: "2"
+kind: mixin
+name: net-default
+displayName: Default network allowlist
+description: "Allows the domains this setup routinely needs beyond the balanced policy"
+caps:
+  network:
+    allow:
+      - "*.context7.com:443"
+      - "context7.com:443"
