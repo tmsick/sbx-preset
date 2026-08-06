@@ -4,8 +4,14 @@
 # environment. Must extend docker/sandbox-templates:<variant> rather than a
 # generic base image. Defaults to claude-code; pass --build-arg
 # BASE_VARIANT=shell for the agent-less variant used by `sbx run shell`.
+#
+# Always extends the `-docker` counterpart (e.g. claude-code-docker), not the
+# plain variant: only that tag bakes in a full Docker Engine (privileged mode,
+# dedicated /var/lib/docker volume, dockerd autostart) -- the same one `sbx
+# create`/`sbx run` use by default when no custom template is given. Building
+# on the plain variant would silently drop Docker from the template.
 ARG BASE_VARIANT=claude-code
-FROM docker/sandbox-templates:${BASE_VARIANT} AS base
+FROM docker/sandbox-templates:${BASE_VARIANT}-docker AS base
 
 USER root
 
