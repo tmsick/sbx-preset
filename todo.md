@@ -22,6 +22,30 @@
   proxy that isn't there rather than traffic worth allowing -- worth
   confirming before it gets allowlisted by reflex.
 
+- `kit/net/` is one allowlist for every sandbox, and `tools/sbx-init` hands
+  every kit under `kit/` to every `sbx create`, so a domain only one project
+  needs (figma for a frontend, asana for another) cannot be expressed
+  without granting it everywhere.
+
+  Split by service rather than by project -- `kit/net-figma/`,
+  `kit/net-asana/` -- and attach the ones a sandbox needs. That is the
+  granularity kits are designed for: the documented mixin use cases are
+  per-capability ("grant the agent access to a new authenticated service"),
+  the distribution tooling is `sbx kit push`/`pull`/`pack` with
+  `kit.allowedSources` defaulting to `["docker.io/"]`, and the built-in
+  agent kits work the same way -- claude's brings `api.anthropic.com`. A kit
+  per project would not survive two projects wanting figma.
+
+  That needs `kits()` to stop meaning "everything in `kit/`": a default set
+  plus opt-in ones, with a thin per-project record of which extras to
+  attach (a `.sbx/kits` in the target project naming them, say) so the kits
+  themselves stay here. `sbx-init allow` also writes the shared kit
+  unconditionally today and would need to target the right one.
+
+  Nothing is blocked meanwhile: unknown flags already reach `sbx create`, so
+  `sbx-init . --kit /path/to/kit` works now, and `sbx policy allow network --sandbox NAME`
+  covers a throwaway.
+
 - Kits are experimental and their schema moves without a version bump to
   signal it: sbx v0.38.0 renamed `caps.network.*` to `permissions.network.*`
   and `commands.*` to `setup.*`, both still under `schemaVersion: "2"`, and
