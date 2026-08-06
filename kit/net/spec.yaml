@@ -21,7 +21,12 @@
 # that reason -- it had been added to the global policy by hand, which is
 # how it was found.
 #
-# Entries take an optional :PORT suffix; without one, every port is allowed.
+# Entries take an optional :PORT suffix; without one, every port is allowed,
+# and `**.` covers the domain itself plus any depth of subdomain (`*.` is
+# exactly one label and excludes the apex). Ports are matched separately,
+# which is why github needs a line here at all: `balanced` allows
+# github.com:443, so HTTPS remotes work out of the box, but port 22 is not
+# in it and an SSH remote is refused without this.
 # `tools/sbx-init allow DOMAIN` appends here (and applies the same rule live
 # to the sandbox owning the current directory), so keep the list one quoted
 # entry per line, sorted -- that's the shape it rewrites.
@@ -33,5 +38,5 @@ description: "Allows the domains this setup routinely needs beyond the balanced 
 permissions:
   network:
     allow:
-      - "*.context7.com:443"
-      - "context7.com:443"
+      - "**.context7.com:443"
+      - "github.com:22"
