@@ -1,0 +1,12 @@
+# Attached by default (see Usage) -- context7 is used routinely enough by this
+# setup's Claude Code config to warrant network reach on every sandbox.
+# Network allowlist conventions are in the README (## kit/).
+schemaVersion: "2"
+kind: mixin
+name: net-context7
+displayName: context7 network access
+description: "Allows context7, for library/API documentation lookups"
+permissions:
+  network:
+    allow:
+      - "**.context7.com:443"

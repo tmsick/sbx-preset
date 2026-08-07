@@ -18,7 +18,7 @@ sbx create \
   --template ghcr.io/tmsick/sbx-preset:claude-code \
   --kit ghcr.io/tmsick/sbx-preset/kit/claude:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/git:latest \
-  --kit ghcr.io/tmsick/sbx-preset/kit/net:latest \
+  --kit ghcr.io/tmsick/sbx-preset/kit/context7:latest \
   claude .
 sbx run --name claude-project   # attach later, from anywhere
 ```
@@ -79,8 +79,8 @@ Two things to know before running `sbx kit add` by hand:
 
 - **Give it an absolute path.** Adding a kit recreates the container, re-resolving the
   references the sandbox was created with; a relative one resolves against a different
-  directory the second time and the recreate fails outright (`./kit/net` came back as
-  `$HOME/kit/net`). A `ghcr.io` reference (see Usage) sidesteps this entirely -- it isn't a
+  directory the second time and the recreate fails outright (`./kit/git` came back as
+  `$HOME/kit/git`). A `ghcr.io` reference (see Usage) sidesteps this entirely -- it isn't a
   path.
 - **Nothing reports which kits a sandbox has.** `sbx ls --json` carries only name, id,
   agent, status and workspaces; `sbx policy ls SANDBOX --source kit` names every rule
@@ -88,11 +88,33 @@ Two things to know before running `sbx kit add` by hand:
   a row per recreate and saying nothing about a kit that only injects files. Re-adding an
   attached kit is refused (exit 1, `duplicate kit name`) -- the practical way to find out.
 
-`claude`, `git` and `net` are what the Usage quickstart attaches by default -- generic enough to
-want on every sandbox. `asana`, `atlassian` and `figma` are network access for one service each,
-worth adding only when a project actually talks to it. There's no directory split between the
-two groups: every kit is attached the same way, an explicit `--kit` flag, so which of these six
-a project needs is a call made per `sbx create`, not encoded in the repository layout.
+`claude`, `git` and `context7` are what the Usage quickstart attaches by default -- generic
+enough to want on every sandbox. `asana`, `atlassian` and `figma` are network access for one
+service each, worth adding only when a project actually talks to it. There's no directory split
+between the two groups: every kit is attached the same way, an explicit `--kit` flag, so which
+of these six a project needs is a call made per `sbx create`, not encoded in the repository
+layout.
+
+Kits are named after the capability they provide (`figma/`, not `net-figma/`), not the mechanism
+they happen to use today: if Figma later needs an API token as well as network reach,
+`environment.variables` goes into the same `kit/figma/`, not a new kit. Splitting by service
+rather than by project is deliberate too -- a kit per project would not survive two projects
+wanting Figma.
+
+Network allowlist conventions, for every kit below that declares `permissions.network.allow`:
+rules from a kit are scoped to the sandbox it was applied to, unlike `sbx policy allow network`
+without `--sandbox`, which edits the global policy every sandbox on this host inherits (`sbx
+policy ls SANDBOX --source kit` shows the ones from a kit). Only what `sbx policy init balanced`
+doesn't already cover belongs in a kit -- it ships ~190 allow entries (github, npm, pypi,
+crates.io, ubuntu, docker registries, the agent APIs, ...); check with `sbx policy ls --type
+network --decision allow --json` first. Grow a list from evidence, not guesses: an entry nobody
+has been blocked on is network reach handed to every agent for nothing -- `sbx policy log
+[SANDBOX]` reports what the proxy actually refused. Entries take an optional `:PORT` suffix;
+without one, every port is allowed, and `**.` covers the domain itself plus any depth of
+subdomain (`*.` is exactly one label and excludes the apex). Adding a domain means editing the
+kit's `spec.yaml` directly, in a clone, and letting CI publish it; an already-running sandbox
+only picks up the change via `sbx kit add` (which recreates its container) or a one-off `sbx
+policy allow network` run by hand.
 
 The kits:
 
@@ -108,19 +130,13 @@ The kits:
   repos outside the mounted workspace, which `sbx`'s own identity injection -- the local
   `.git/config` of an already-git workspace -- misses. That injection is also where
   `user.name`/`user.email` come from, not this kit, so `.gitconfig` here carries only
-  editor/alias/workflow preferences.
-- `kit/net/` carries a network allowlist rather than files, so the domains this setup
-  routinely needs stop being a series of `sbx policy allow network` run by hand after every
-  `sbx create`. Kit rules are scoped to their own sandbox, unlike a global `sbx policy
-allow`. The conventions for the list are in its `spec.yaml`. Adding a domain means editing
-  that file directly, in a clone, and letting CI publish it; an already-running sandbox only
-  picks up the change via `sbx kit add` (which recreates its container) or a one-off `sbx
-  policy allow network` run by hand.
+  editor/alias/workflow preferences. It also allows `github.com:22`: `balanced` already covers
+  github.com:443 (HTTPS remotes work out of the box), but not port 22, so an SSH remote needs
+  this or it's refused.
+- `kit/context7/` allows `**.context7.com:443` -- library/API documentation lookups, used
+  routinely enough by this setup's Claude Code config to warrant it on every sandbox.
 - `kit/asana/`, `kit/atlassian/` and `kit/figma/` each allow only the domains that one service
-  needs. Named after the service (`figma/`, not `net-figma/`) because a kit is a unit of
-  _capability_, not of mechanism: if Figma later needs an API token as well as network reach,
-  `environment.variables` goes in the same kit. Splitting by service rather than by project is
-  deliberate -- a kit per project would not survive two projects wanting Figma.
+  needs.
 
 A GitHub Actions workflow ([`.github/workflows/kits.yml`](.github/workflows/kits.yml)) runs
 `sbx kit validate` against every kit, on pull requests and on push to `main`, and on push to
