@@ -25,7 +25,7 @@ jobs:
         kit:
           - kit/claude
           - kit/git
-          - kit/net
+          - kit/context7
           - kit/asana
           - kit/atlassian
           - kit/figma
@@ -48,7 +48,7 @@ jobs:
         kit:
           - kit/claude
           - kit/git
-          - kit/net
+          - kit/context7
           - kit/asana
           - kit/atlassian
           - kit/figma

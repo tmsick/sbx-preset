@@ -1,8 +1,9 @@
 # Attached only when a project needs it:
-# `--kit ghcr.io/tmsick/sbx-preset/kit/figma:latest`. The allowlist conventions --
-# including why an entry follows a recorded refusal rather than a guess -- are in
-# kit/net/spec.yaml. This starts at the domain the service is obviously reached on;
-# grow it from `sbx policy log` if that isn't enough.
+# `--kit ghcr.io/tmsick/sbx-preset/kit/figma:latest`. Network allowlist
+# conventions -- including why an entry follows a recorded refusal rather than
+# a guess -- are in the README (## kit/). This starts at the domain the
+# service is obviously reached on; grow it from `sbx policy log` if that
+# isn't enough.
 schemaVersion: "2"
 kind: mixin
 name: net-figma
