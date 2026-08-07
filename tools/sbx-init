@@ -1,19 +1,16 @@
 #!/usr/bin/env python3
-"""Create a sandbox from this repo's template and kits, from anywhere.
+"""Create a sandbox from tmsick/sbx-preset's published template and kits.
 
-    ln -s "$PWD/tools/sbx-init" ~/bin/sbx-init   # once
-    cd /some/project && sbx-init .               # from then on
+    curl -fsSL https://raw.githubusercontent.com/tmsick/sbx-preset/main/tools/sbx-init \\
+      -o ~/bin/sbx-init && chmod +x ~/bin/sbx-init                     # once
+    sbx settings set kit.allowedSources '["docker.io/","ghcr.io/tmsick/"]'  # once
+    sbx-init .                                                         # from then on
 
-    sbx-init PATH           create a sandbox for PATH
-    sbx-init allow DOMAIN   allow a domain, now and for future sandboxes
+    sbx-init PATH   create a sandbox for PATH
 
-The point is that neither the repository path nor the kit list has to be
-typed: `sbx create` needs `-t sbx-preset:<variant>` plus a `--kit` per kit,
-all of them paths inside this repository, which is why creating a sandbox
-otherwise means coming back here first.
-
-Every kit under kit/ goes to every sandbox; kit-opt/ holds the ones only
-some projects want, named after the service they reach (`--with figma`).
+Everything comes from ghcr.io/tmsick/sbx-preset -- no clone of that repository
+needed. `kit/claude`, `kit/git` and `kit/net` attach to every sandbox;
+`kit-opt/<service>` attaches only when asked for (`--with <service>`).
 
 Unrecognized flags are handed to `sbx create` as-is (`sbx-init . --profile
 strict`); it rejects the ones it doesn't know, so typos still surface.
@@ -30,20 +27,13 @@ import sys
 from pathlib import Path
 from typing import NoReturn
 
-# resolve() follows the symlink this is invoked through, so the repository comes
-# from the script's own real location -- nothing hardcoded, nothing typed at the
-# prompt. Install it as a symlink, not a hardlink: a hardlink is just another
-# name for the file, with no path back to the repo.
-REPO = Path(__file__).resolve().parent.parent
+REGISTRY = "ghcr.io/tmsick/sbx-preset"
+KIT_TAG = "latest"
 
-# Two directories rather than one with a naming convention: which kits are
-# attached by default is then a property of where a kit sits, not of how it was
-# named, and kits() keeps meaning "all of them".
-KIT_DIR = REPO / "kit"
-OPT_KIT_DIR = REPO / "kit-opt"
-NET_KIT = KIT_DIR / "net"
-
-IMAGE = "sbx-preset"
+# Mirrors .github/workflows/kits.yml's publish matrix in the source repo --
+# keep the two in sync by hand if a kit is added or removed there.
+DEFAULT_KITS = ["kit/claude", "kit/git", "kit/net"]
+OPT_KIT_SERVICES = ["asana", "atlassian", "figma"]
 
 # The Dockerfile's BASE_VARIANT (its final-<variant> stages) that goes with
 # each agent. Anything else needs an explicit --template.
@@ -71,51 +61,20 @@ def sbx_json(*args):
     return json.loads(out)
 
 
-def kits(directory):
-    """Every kit under a directory, in a stable order.
-
-    Discovered rather than listed, so a kit added later (or one whose `files/`
-    isn't filled in yet -- kits validate without one) needs no edit here.
-    """
-    if not directory.is_dir():
-        return []
-    return sorted(d for d in directory.iterdir() if (d / "spec.yaml").is_file())
-
-
-def opt_kits(names):
-    """Resolve --with names against kit-opt/."""
-    available = {d.name: d for d in kits(OPT_KIT_DIR)}
-    chosen = []
-    for name in names:
-        if name not in available:
-            fail(
-                f"no kit-opt/{name}/",
-                f"available: {', '.join(available) or '(none)'}",
-            )
-        chosen.append(available[name])
-    return chosen
-
-
 def with_names(values):
     """Flatten repeated and comma-separated --with values."""
     return [name for value in values for name in value.split(",") if name]
 
 
-def template_loaded(template):
-    """Whether sandboxd's own image store holds this template.
-
-    Worth checking up front: sandboxd keeps its images separate from the host
-    Docker daemon, so a template built but never `sbx template load`ed is
-    missing here, and `sbx create` reports that as a failed registry pull.
-    """
-    repository, _, tag = template.partition(":")
-    for image in sbx_json("template", "ls")["images"]:
-        # Locally loaded images come back fully qualified: sbx-preset
-        # lists as docker.io/library/sbx-preset.
-        name = image["repository"].split("/")[-1]
-        if name == repository and image["tag"] == tag:
-            return True
-    return False
+def opt_kits(names):
+    """Resolve --with names against OPT_KIT_SERVICES."""
+    for name in names:
+        if name not in OPT_KIT_SERVICES:
+            fail(
+                f"no kit-opt/{name}",
+                f"available: {', '.join(OPT_KIT_SERVICES)}",
+            )
+    return [f"kit-opt/{name}" for name in names]
 
 
 def sandbox_for(path):
@@ -140,40 +99,6 @@ def sandbox_for(path):
     return name
 
 
-def merge_allowlist(kit, domains, dry_run=False):
-    """Merge domains into permissions.network.allow in a kit's spec.yaml.
-
-    Keyed on the `allow:` line alone, so it survives the parent key being
-    renamed -- which kit-spec did between sbx v0.37.1 and v0.38.0 (`caps` ->
-    `permissions`).
-
-    A line edit rather than a YAML round-trip: the standard library has no YAML
-    parser, and a hand-rolled one would reformat the comments that carry this
-    repo's reasoning. spec.yaml documents the one shape written back here -- one
-    quoted entry per line, sorted -- and `sbx kit validate` in cmd_allow()
-    catches it if that ever stops holding.
-    """
-    spec = kit / "spec.yaml"
-    lines = spec.read_text().splitlines()
-    key = next((i for i, l in enumerate(lines) if l.strip() == "allow:"), None)
-    if key is None:
-        fail(f"{spec}: no `allow:` key to merge into")
-
-    indent = " " * (len(lines[key]) - len(lines[key].lstrip()) + 2)
-    end = key + 1
-    while end < len(lines) and lines[end].startswith(indent + "- "):
-        end += 1
-
-    current = [l.strip()[2:].strip().strip('"') for l in lines[key + 1 : end]]
-    added = sorted(set(domains) - set(current))
-    if not dry_run:
-        lines[key + 1 : end] = [
-            f'{indent}- "{d}"' for d in sorted(set(current) | set(domains))
-        ]
-        spec.write_text("\n".join(lines) + "\n")
-    return added
-
-
 def cmd_create(args, extra):
     workspace = Path(args.path).resolve()
     if not workspace.is_dir():
@@ -191,21 +116,13 @@ def cmd_create(args, extra):
         if not variant:
             fail(
                 f"no sbx-preset variant for agent {args.agent!r}",
-                "pass --template, or add the variant to the Dockerfile",
+                "pass --template, or add the variant upstream",
             )
-        template = f"{IMAGE}:{variant}"
-        if not args.dry_run and not template_loaded(template):
-            build = "mise run"
-            if variant != VARIANTS["claude"]:
-                build = f"BASE_VARIANT={variant} {build}"
-            fail(
-                f"template {template} is not loaded into sandboxd",
-                f"build and load it with: {build}   (in {REPO})",
-            )
+        template = f"{REGISTRY}:{variant}"
 
     cmd = ["sbx", "create", "--template", template]
-    for kit in kits(KIT_DIR) + opt_kits(with_names(args.with_)):
-        cmd += ["--kit", str(kit)]
+    for kit in DEFAULT_KITS + opt_kits(with_names(args.with_)):
+        cmd += ["--kit", f"{REGISTRY}/{kit}:{KIT_TAG}"]
     if args.name:
         cmd += ["--name", args.name]
     # Anything left over goes last, where it reads as an argument to `sbx create`
@@ -215,61 +132,7 @@ def cmd_create(args, extra):
     run(cmd, args.dry_run)
 
 
-def cmd_allow(args, extra):
-    if extra:
-        fail(f"unexpected arguments: {shlex.join(extra)}")
-
-    # Which kit the domain belongs to is the caller's judgement: kit/net/ reaches
-    # every sandbox, a kit-opt/ one only those that asked for it.
-    kit = opt_kits([args.with_])[0] if args.with_ else NET_KIT
-    spec = kit / "spec.yaml"
-    added = merge_allowlist(kit, args.domains, args.dry_run)
-    report = "added " + ", ".join(added) if added else "already listed"
-    # flush: run() reports on stderr, so an unflushed stdout would print the
-    # commands before the edit they follow.
-    print(f"{spec.relative_to(REPO)}: {report}", flush=True)
-    run(["sbx", "kit", "validate", str(kit)], args.dry_run)
-
-    # The kit only reaches an existing sandbox through `sbx kit add`, which
-    # recreates its container. A scoped policy rule is the same allow without the
-    # recreate, so do that here and leave the kit to cover the next `sbx-init`.
-    sandbox = args.sandbox or sandbox_for(Path.cwd())
-    if not sandbox:
-        print(f"no sandbox holds {Path.cwd()}; the kit applies at the next sbx-init")
-        return
-    resources = ",".join(args.domains)
-    run(
-        ["sbx", "policy", "allow", "network", "--sandbox", sandbox, resources],
-        args.dry_run,
-    )
-
-
 def main():
-    # Dispatched on the first word rather than through subparsers: the common
-    # call is a bare `sbx-init .`, and argparse can't make a subcommand optional
-    # without making `--dry-run .` ambiguous with it.
-    argv = sys.argv[1:]
-    if argv and argv[0] == "allow":
-        parser = argparse.ArgumentParser(
-            prog="sbx-init allow",
-            description="Allow a domain for the current sandbox and for future ones.",
-        )
-        parser.add_argument("domains", nargs="+", metavar="DOMAIN")
-        parser.add_argument(
-            "--sandbox", help="default: the one holding the current directory"
-        )
-        parser.add_argument(
-            "--with",
-            dest="with_",
-            metavar="SERVICE",
-            help="write to kit-opt/SERVICE instead of kit/net",
-        )
-        parser.add_argument(
-            "--dry-run", action="store_true", help="print commands only"
-        )
-        args, extra = parser.parse_known_args(argv[1:])
-        return cmd_allow(args, extra)
-
     parser = argparse.ArgumentParser(
         prog="sbx-init",
         description=__doc__,
@@ -291,7 +154,7 @@ def main():
         help="also attach kit-opt/SERVICE (repeatable, or comma-separated)",
     )
     parser.add_argument("--dry-run", action="store_true", help="print commands only")
-    args, extra = parser.parse_known_args(argv)
+    args, extra = parser.parse_known_args(sys.argv[1:])
     return cmd_create(args, extra)
 
 

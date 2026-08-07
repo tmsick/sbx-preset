@@ -8,14 +8,23 @@ a [kit](https://docs.docker.com/ai/sandboxes/customize/), not baked into the ima
 
 ## Usage
 
-Tasks are defined in `mise.toml`; run `mise trust` once per clone.
+For your own project, no clone of this repository needed -- see [tools/](#tools):
 
 ```sh
-mise run                    # build, save and load the template
+curl -fsSL https://raw.githubusercontent.com/tmsick/sbx-preset/main/tools/sbx-init \
+  -o ~/bin/sbx-init && chmod +x ~/bin/sbx-init                         # once
+sbx settings set kit.allowedSources '["docker.io/","ghcr.io/tmsick/"]'  # once
 
-cd /path/to/project         # then, from the project itself -- see tools/
+cd /path/to/project
 sbx-init .
 sbx run --name claude-project   # attach later, from anywhere
+```
+
+To work on this repository itself -- the Dockerfile, `template/config/`, or a kit's
+`spec.yaml` -- clone it and run `mise trust` once. Tasks are defined in `mise.toml`:
+
+```sh
+mise run                    # build, save and load the template locally
 ```
 
 Other tasks: `build`, `save`, `clean`.
@@ -36,9 +45,9 @@ image ships with, not personal configuration -- and is what `mise run` builds, s
 A GitHub Actions workflow ([`.github/workflows/template.yml`](.github/workflows/template.yml))
 publishes it to `ghcr.io/tmsick/sbx-preset:<variant>` on every push to `main` -- tagging both
 `<variant>` and `<variant>-<sha>` -- and, on a pull request touching `template/`, builds without
-pushing, to catch a Renovate `MISE_VERSION` bump that no longer builds. `sbx-init` still resolves
-the template from sandboxd's local image store (`mise run load`); consuming the ghcr.io image
-directly is `sbx run --template ghcr.io/tmsick/sbx-preset:<variant> claude`.
+pushing, to catch a Renovate `MISE_VERSION` bump that no longer builds. `sbx-init` always
+resolves the template from `ghcr.io`; `mise run load` is for trying a local change here before
+it's published (`sbx run --template sbx-preset:<variant> claude` against that local build).
 
 `template/config/mise/`, `template/config/fish/` and `template/config/vscode-server/` mirror
 `~/.config/mise/`, `~/.config/fish/` and `~/.vscode-server/` inside the image.
@@ -53,34 +62,39 @@ session and VS Code's terminal key off.
 
 ## tools/
 
-`tools/sbx-init` is the everyday entry point. Symlink it onto `PATH` once:
+`tools/sbx-init` composes the `sbx create` call for you -- the template plus all three default
+kits, plus whatever `--with` asks for -- so you don't have to type
+`-t ghcr.io/tmsick/sbx-preset:claude-code` and a `--kit ghcr.io/tmsick/sbx-preset/...` per kit by
+hand. Install it as a plain file; it needs no clone of this repository to run:
 
 ```sh
-ln -s "$PWD/tools/sbx-init" ~/bin/sbx-init
+curl -fsSL https://raw.githubusercontent.com/tmsick/sbx-preset/main/tools/sbx-init \
+  -o ~/bin/sbx-init && chmod +x ~/bin/sbx-init
 ```
 
-By hand, creating a sandbox names this repository three times over -- `-t
-sbx-preset:claude-code` plus a `--kit` per kit -- which is why it otherwise has to happen
-from this directory. `sbx-init` fills those paths in, so a sandbox gets created from the
-project it is for:
+`sbx` refuses kits from sources it doesn't recognize by default (`kit.allowedSources`); allow
+this repository's `ghcr.io` packages once:
 
 ```sh
-sbx-init .                       # the same sbx create, with paths filled in
-sbx-init . --with figma          # plus kit-opt/figma/ (repeatable, comma-separated)
+sbx settings set kit.allowedSources '["docker.io/","ghcr.io/tmsick/"]'
+```
+
+```sh
+sbx-init .                       # sbx create, with the template and kits filled in
+sbx-init . --with figma          # plus kit-opt/figma (repeatable, comma-separated)
 sbx-init . --profile strict      # unrecognized flags go on to `sbx create`
 sbx-init --agent shell .         # picks the matching sbx-preset variant
 sbx-init --dry-run .             # print the command instead of running it
 ```
 
-It finds the repository from its own real location (`Path(__file__).resolve()` follows the
-symlink), so install it as a symlink -- a hardlink is just another name for the file, with
-no path back here.
+`sbx-init`'s own kit list (`DEFAULT_KITS`, `OPT_KIT_SERVICES`) mirrors
+[`.github/workflows/kits.yml`](.github/workflows/kits.yml)'s publish matrix; the two are kept in
+sync by hand, not generated from one source.
 
-`sbx-init allow DOMAIN` adds a domain to `kit/net/` _and_ applies the same rule to the
-sandbox holding the current directory. Both halves are needed: the kit reaches an existing
-sandbox only through `sbx kit add`, which recreates its container, while a scoped policy
-rule takes effect immediately but is forgotten when the sandbox goes away. `--with figma`
-writes to `kit-opt/figma/` instead.
+There's no `sbx-init allow` shortcut: adding a network domain means editing
+[`kit/net/spec.yaml`](kit/net/spec.yaml) directly, in a clone, and letting CI publish it. An
+already-running sandbox only picks up the change via `sbx kit add` (which recreates its
+container) or a one-off `sbx policy allow network` run by hand.
 
 ## kit/
 
@@ -95,7 +109,8 @@ Two things to know before running `sbx kit add` by hand:
 - **Give it an absolute path.** Adding a kit recreates the container, re-resolving the
   references the sandbox was created with; a relative one resolves against a different
   directory the second time and the recreate fails outright (`./kit/net` came back as
-  `$HOME/kit/net`). `sbx-init` passes absolute paths for this reason.
+  `$HOME/kit/net`). `sbx-init` sidesteps this entirely -- it passes `ghcr.io` references,
+  not paths.
 - **Nothing reports which kits a sandbox has.** `sbx ls --json` carries only name, id,
   agent, status and workspaces; `sbx policy ls SANDBOX --source kit` names every rule
   `kit:<sandbox>` and shows merged resources rather than the kits behind them, accumulating

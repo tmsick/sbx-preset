@@ -26,11 +26,10 @@
   silently, so `sbx kit validate` is still worth running by hand after
   upgrading sbx locally.
 
-- `tools/sbx-init` still reads kits as local filesystem paths (`kit/<name>/`,
-  `kit-opt/<service>/`), so a second machine needs this repository checked out
-  either way. All six kits now publish to `ghcr.io/tmsick/sbx-preset/<path>` on
-  push to `main` (`.github/workflows/kits.yml`), so a clone-free path is
-  possible -- `sbx kit add ghcr.io/tmsick/sbx-preset/kit/net:latest` -- but
-  `kit.allowedSources` defaults to `["docker.io/"]` and would need ghcr.io
-  added first, and `tools/sbx-init` would need to grow a ghcr.io-based mode to
-  actually use it instead of the local paths.
+- `tools/sbx-init`'s `DEFAULT_KITS`/`OPT_KIT_SERVICES` and
+  `.github/workflows/kits.yml`'s publish matrix list the same six kits by hand
+  in two separate places (the point of dropping directory discovery was to let
+  `sbx-init` run without a clone, so it can no longer just list `kit/`). Adding
+  or removing a kit needs both edited, and nothing catches a missed one --
+  `sbx-init` would silently omit a new kit, or offer `--with` a service whose
+  ghcr.io package no longer exists.
