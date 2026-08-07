@@ -21,7 +21,7 @@
   it: sbx v0.38.0 renamed `caps.network.*` to `permissions.network.*` and
   `commands.*` to `setup.*`, both still under `schemaVersion: "2"`.
   `.github/workflows/kits.yml` now runs `sbx kit validate` on every PR/push
-  touching `kit/` or `kit-opt/`, but only reacts to changes in this repo --
+  touching `kit/`, but only reacts to changes in this repo --
   a schema-breaking sbx release with no accompanying kit edit slips past it
   silently, so `sbx kit validate` is still worth running by hand after
   upgrading sbx locally.

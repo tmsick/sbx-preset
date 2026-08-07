@@ -4,13 +4,11 @@ on:
   pull_request:
     paths:
       - "kit/**"
-      - "kit-opt/**"
       - ".github/workflows/kits.yml"
   push:
     branches: [main]
     paths:
       - "kit/**"
-      - "kit-opt/**"
       - ".github/workflows/kits.yml"
   workflow_dispatch:
 
@@ -28,9 +26,9 @@ jobs:
           - kit/claude
           - kit/git
           - kit/net
-          - kit-opt/asana
-          - kit-opt/atlassian
-          - kit-opt/figma
+          - kit/asana
+          - kit/atlassian
+          - kit/figma
     steps:
       - uses: actions/checkout@v6
 
@@ -51,9 +49,9 @@ jobs:
           - kit/claude
           - kit/git
           - kit/net
-          - kit-opt/asana
-          - kit-opt/atlassian
-          - kit-opt/figma
+          - kit/asana
+          - kit/atlassian
+          - kit/figma
     steps:
       - uses: actions/checkout@v6
 

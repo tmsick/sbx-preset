@@ -23,9 +23,9 @@ sbx create \
 sbx run --name claude-project   # attach later, from anywhere
 ```
 
-Add `--kit ghcr.io/tmsick/sbx-preset/kit-opt/<service>:latest` for a project that needs one (see
-[kit-opt/](#kit-opt)). Running this again for a project that already has a sandbox creates a
-second one rather than reusing it -- check `sbx ls` first.
+Add `--kit ghcr.io/tmsick/sbx-preset/kit/<service>:latest` for a project that needs one (see
+[kit/](#kit)). Running this again for a project that already has a sandbox creates a second one
+rather than reusing it -- check `sbx ls` first.
 
 To work on this repository itself -- the Dockerfile, `template/config/`, or a kit's
 `spec.yaml` -- clone it and run `mise trust` once. Tasks are defined in `mise.toml`:
@@ -88,7 +88,13 @@ Two things to know before running `sbx kit add` by hand:
   a row per recreate and saying nothing about a kit that only injects files. Re-adding an
   attached kit is refused (exit 1, `duplicate kit name`) -- the practical way to find out.
 
-The kits themselves:
+`claude`, `git` and `net` are what the Usage quickstart attaches by default -- generic enough to
+want on every sandbox. `asana`, `atlassian` and `figma` are network access for one service each,
+worth adding only when a project actually talks to it. There's no directory split between the
+two groups: every kit is attached the same way, an explicit `--kit` flag, so which of these six
+a project needs is a call made per `sbx create`, not encoded in the repository layout.
+
+The kits:
 
 - `kit/claude/` injects `CLAUDE.md` into `/home/agent/.claude/`. Only `CLAUDE.md` and
   `rules/` are worth injecting this way: `sbx` rewrites `~/.claude/settings.json` and
@@ -110,22 +116,13 @@ allow`. The conventions for the list are in its `spec.yaml`. Adding a domain mea
   that file directly, in a clone, and letting CI publish it; an already-running sandbox only
   picks up the change via `sbx kit add` (which recreates its container) or a one-off `sbx
   policy allow network` run by hand.
-
-## kit-opt/
-
-`kit-opt/<service>/` holds the kits only some projects want, attached with an extra
-`--kit ghcr.io/tmsick/sbx-preset/kit-opt/<service>:latest`. Everything in `kit/` goes to
-every sandbox; nothing in `kit-opt/` goes anywhere unless it is asked for. Which of the two
-directories a kit sits in is the whole difference between them -- no naming convention to
-remember, and both validate the same way: `sbx kit validate ./kit/<name>/` takes one
-`REFERENCE` at a time, not a glob.
-
-They are named after the service (`figma/`, not `net-figma/`) because a kit is a unit of
-_capability_, not of mechanism: if Figma later needs an API token as well as network reach,
-`environment.variables` goes in the same kit. Splitting by service rather than by project
-is deliberate -- a kit per project would not survive two projects wanting Figma.
+- `kit/asana/`, `kit/atlassian/` and `kit/figma/` each allow only the domains that one service
+  needs. Named after the service (`figma/`, not `net-figma/`) because a kit is a unit of
+  _capability_, not of mechanism: if Figma later needs an API token as well as network reach,
+  `environment.variables` goes in the same kit. Splitting by service rather than by project is
+  deliberate -- a kit per project would not survive two projects wanting Figma.
 
 A GitHub Actions workflow ([`.github/workflows/kits.yml`](.github/workflows/kits.yml)) runs
-`sbx kit validate` against every kit in both directories, on pull requests and on push to
-`main`, and on push to `main` also publishes every one of them to
-`ghcr.io/tmsick/sbx-preset/<path>:latest` (and `:<sha>`).
+`sbx kit validate` against every kit, on pull requests and on push to `main`, and on push to
+`main` also publishes every one of them to `ghcr.io/tmsick/sbx-preset/<path>:latest` (and
+`:<sha>`).
