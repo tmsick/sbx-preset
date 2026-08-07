@@ -1,7 +1,0 @@
-# The build context only needs config/, the paths the Dockerfile COPYs; kit/ is
-# applied by sbx at sandbox creation, not by this build.
-#
-# An allowlist ("*" + "!" exceptions), so a new COPY has to widen this file
-# instead of the rest of the repo riding along unnoticed.
-*
-!config

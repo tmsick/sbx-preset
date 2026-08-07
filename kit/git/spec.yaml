@@ -1,14 +1,14 @@
-# Injects personal git config at sandbox creation (`--kit`) or via `sbx kit add`.
+# Injects git config at sandbox creation (`--kit`) or via `sbx kit add`.
 #
 # Targets files/home/.gitconfig and files/home/.gitignore_global, not the
 # XDG-style ~/.config/git/{config,ignore}: sandboxd forces core.excludesFile to
 # ~/.gitignore_global on every sandbox start, so an XDG-style ignore file would
 # just be shadowed and never read (README has the full story).
 #
-# Only this spec.yaml is committed; both files/ entries are gitignored and must
-# exist locally before the kit is usable.
+# Identity (user.name/user.email) is sbx's own job (see README), so nothing
+# here is personal.
 schemaVersion: "2"
 kind: mixin
 name: git-config
-displayName: Personal git config
-description: "Injects a personal ~/.gitconfig and ~/.gitignore_global"
+displayName: git config
+description: "Injects ~/.gitconfig and ~/.gitignore_global"

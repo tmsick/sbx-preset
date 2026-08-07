@@ -1,10 +1,8 @@
-# Injects personal Claude Code configuration (files/home/.claude/) at sandbox
-# creation (`--kit`) or via `sbx kit add`.
-#
-# Only this spec.yaml is committed; files/home/.claude/CLAUDE.md is gitignored
-# and must exist locally before the kit is usable.
+# Injects Claude Code configuration (files/home/.claude/) at sandbox creation
+# (`--kit`) or via `sbx kit add`. CLAUDE.md stays either empty or generic
+# enough for everyone to see.
 schemaVersion: "2"
 kind: mixin
 name: claude-config
-displayName: Personal Claude Code config
-description: "Injects a personal CLAUDE.md (and rules/, if present) for Claude Code"
+displayName: Claude Code config
+description: "Injects CLAUDE.md (and rules/, if present) for Claude Code"

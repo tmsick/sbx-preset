@@ -32,7 +32,7 @@ build_args=(--build-arg "BASE_VARIANT=$BASE_VARIANT")
 if [ -n "${MISE_VERSION:-}" ]; then
   build_args+=(--build-arg "MISE_VERSION=$MISE_VERSION")
 fi
-docker build "${build_args[@]}" -t "$IMAGE:$TAG" .
+docker build "${build_args[@]}" -f template/Dockerfile -t "$IMAGE:$TAG" template/
 '''
 
 [tasks.save]
@@ -61,7 +61,3 @@ sbx template load "tmp/$IMAGE-$TAG.tar"
 [tasks.clean]
 description = "Remove the tmp/ tarball staging directory"
 run = "rm -rf tmp"
-
-[tasks."kit:init"]
-description = "Scaffold kit/*/files/home/ dirs so personal configs can be dropped in directly"
-run = "mkdir -p kit/claude/files/home/.claude kit/git/files/home"

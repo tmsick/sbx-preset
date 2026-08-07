@@ -1,0 +1,24 @@
+# vim: set noexpandtab:
+
+[alias]
+	br = branch
+	co = checkout
+	lg = log --graph --relative-date
+	st = status
+	sw = switch
+
+[color]
+	ui = auto
+
+[core]
+	editor = nvim
+	quotepath = false
+
+[init]
+	defaultBranch = main
+
+[log]
+	abbrevCommit = true
+
+[pull]
+	ff = only

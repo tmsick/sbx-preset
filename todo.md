@@ -1,6 +1,6 @@
 # TODO
 
-- `config/fish/config.fish` mixes personal preferences (`EDITOR nvim`, aliases
+- `template/config/fish/config.fish` mixes personal preferences (`EDITOR nvim`, aliases
   for git/nvim/docker/less) into what README documents as template-level config.
   Only `XDG_CONFIG_HOME`, `mise activate fish` and the `fish_add_path` calls are
   actually required; split the rest into a kit, as `kit/claude/` does.
@@ -12,10 +12,6 @@
   (`${MISE_VERSION:-}`) rather than through `[env]`. Fix: move the other three
   out of `[env]` and read them the same way.
 
-- No CI builds the image on push/PR. Renovate auto-bumps the pinned
-  `MISE_VERSION` in the Dockerfile, but nothing verifies the bump still
-  `docker build`s before merge.
-
 - `ports.ubuntu.com:3128` is refused 11 times across six sandboxes in the daemon
   log. 3128 is Squid's port, so this reads as apt reaching for a proxy that isn't
   there rather than traffic worth allowing -- confirm before allowlisting it by
@@ -23,16 +19,18 @@
 
 - Kits are experimental and their schema moves without a version bump to signal
   it: sbx v0.38.0 renamed `caps.network.*` to `permissions.network.*` and
-  `commands.*` to `setup.*`, both still under `schemaVersion: "2"`, and
-  `kit/net/spec.yaml` stopped validating the moment sbx updated underneath it.
-  Nothing catches that until a `sbx create` fails, so `sbx kit validate ./kit/*/`
-  belongs in whatever CI ends up being built (see above), and is worth running by
-  hand after an sbx update.
+  `commands.*` to `setup.*`, both still under `schemaVersion: "2"`.
+  `.github/workflows/kits.yml` now runs `sbx kit validate` on every PR/push
+  touching `kit/` or `kit-opt/`, but only reacts to changes in this repo --
+  a schema-breaking sbx release with no accompanying kit edit slips past it
+  silently, so `sbx kit validate` is still worth running by hand after
+  upgrading sbx locally.
 
-- `tools/sbx-init` never publishes the kits, so it only works on this machine's
-  clone. A second machine would want `sbx kit push` to an OCI registry or a
-  `git+https://...#dir=` reference instead -- both drop the repository path
-  entirely, at the cost of publishing personal `CLAUDE.md`/`.gitconfig`, a push
-  per edit, and the "editing a kit takes effect on the next create" property
-  README documents. `kit.allowedSources` defaults to `["docker.io/"]` and would
-  need widening.
+- `tools/sbx-init` still reads kits as local filesystem paths (`kit/<name>/`,
+  `kit-opt/<service>/`), so a second machine needs this repository checked out
+  either way. All six kits now publish to `ghcr.io/tmsick/sbx-preset/<path>` on
+  push to `main` (`.github/workflows/kits.yml`), so a clone-free path is
+  possible -- `sbx kit add ghcr.io/tmsick/sbx-preset/kit/net:latest` -- but
+  `kit.allowedSources` defaults to `["docker.io/"]` and would need ghcr.io
+  added first, and `tools/sbx-init` would need to grow a ghcr.io-based mode to
+  actually use it instead of the local paths.
