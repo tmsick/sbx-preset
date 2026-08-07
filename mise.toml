@@ -32,7 +32,7 @@ build_args=(--build-arg "BASE_VARIANT=$BASE_VARIANT")
 if [ -n "${MISE_VERSION:-}" ]; then
   build_args+=(--build-arg "MISE_VERSION=$MISE_VERSION")
 fi
-docker build "${build_args[@]}" -t "$IMAGE:$TAG" .
+docker build "${build_args[@]}" -f template/Dockerfile -t "$IMAGE:$TAG" template/
 '''
 
 [tasks.save]

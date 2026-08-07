@@ -1,6 +1,6 @@
 # TODO
 
-- `config/fish/config.fish` mixes personal preferences (`EDITOR nvim`, aliases
+- `template/config/fish/config.fish` mixes personal preferences (`EDITOR nvim`, aliases
   for git/nvim/docker/less) into what README documents as template-level config.
   Only `XDG_CONFIG_HOME`, `mise activate fish` and the `fish_add_path` calls are
   actually required; split the rest into a kit, as `kit/claude/` does.

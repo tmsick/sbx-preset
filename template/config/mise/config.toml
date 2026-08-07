@@ -7,4 +7,11 @@ python = "latest"
 usage = "latest"
 
 [settings]
-minimum_release_age_excludes = ["bat", "neovim", "node", "npm", "python", "usage"]
+minimum_release_age_excludes = [
+    "bat",
+    "neovim",
+    "node",
+    "npm",
+    "python",
+    "usage",
+]

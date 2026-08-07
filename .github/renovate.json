@@ -1,14 +1,10 @@
 {
-  "extends": [
-    "config:recommended"
-  ],
+  "extends": ["config:recommended"],
   "customManagers": [
     {
       "customType": "regex",
       "description": "Bump the pinned mise version installed by the Dockerfile",
-      "managerFilePatterns": [
-        "/^Dockerfile$/"
-      ],
+      "managerFilePatterns": ["/^template\\/Dockerfile$/"],
       "matchStrings": [
         "ARG MISE_VERSION=(?<currentValue>v\\d+\\.\\d+\\.\\d+)\\s"
       ],

@@ -1,9 +1,9 @@
 # sbx-preset
 
 A custom [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) template that adds
-[mise](https://mise.jdx.dev/) to the stock agent environment. Personal configuration
-(Claude Code, git, and eventually others) is layered on at sandbox creation time via a
-[kit](https://docs.docker.com/ai/sandboxes/customize/), not baked into the image -- see
+[mise](https://mise.jdx.dev/) to the stock agent environment, built from [template/](#template).
+Personal configuration (Claude Code, git, and eventually others) is layered on at sandbox creation
+time via a [kit](https://docs.docker.com/ai/sandboxes/customize/), not baked into the image -- see
 [kit/](#kit).
 
 ## Usage
@@ -26,6 +26,23 @@ Variables (read from the environment): `IMAGE`, `BASE_VARIANT`, `TAG`, `MISE_VER
 BASE_VARIANT=shell mise run          # the agent-less variant used by `sbx run shell`
 MISE_VERSION=v2026.8.1 mise run      # override the pin in the Dockerfile
 ```
+
+## template/
+
+`template/` is the Dockerfile's build context: `template/Dockerfile` plus `template/config/`, the
+paths it `COPY`s. Unlike `kit/`, it's committed as-is -- it defines the reproducible toolchain the
+image ships with, not personal configuration -- and is what `mise run` builds, saves and loads.
+
+`template/config/mise/`, `template/config/fish/` and `template/config/vscode-server/` mirror
+`~/.config/mise/`, `~/.config/fish/` and `~/.vscode-server/` inside the image.
+
+`template/config/fish/config.fish` activates mise for interactive shells and sets defaults (editor,
+locale, path, aliases) scoped to what actually exists in the image.
+
+`template/config/vscode-server/data/Machine/settings.json` makes fish the default profile for VS
+Code's Remote-SSH terminal. Needed on top of the `agent` user's login shell: Docker Sandboxes
+forces `SHELL=/bin/bash` into every sandbox at creation time, and that is what both a plain `ssh`
+session and VS Code's terminal key off.
 
 ## tools/
 
@@ -63,7 +80,7 @@ writes to `kit-opt/figma/` instead.
 `kit/<name>/` directories are [sbx kits](https://docs.docker.com/ai/sandboxes/customize/):
 declarative artifacts applied at sandbox creation (`--kit`) or to a running sandbox (`sbx
 kit add`), not baked into the image. Personal, per-user configuration belongs here rather
-than in `config/` -- editing a kit takes effect on the next `sbx create`/`run`, with no
+than in `template/` -- editing a kit takes effect on the next `sbx create`/`run`, with no
 image rebuild.
 
 Each kit's `spec.yaml` is committed; `files/` (the personal content) is gitignored. Run
@@ -114,18 +131,3 @@ They are named after the service (`figma/`, not `net-figma/`) because a kit is a
 _capability_, not of mechanism: if Figma later needs an API token as well as network reach,
 `environment.variables` goes in the same kit. Splitting by service rather than by project
 is deliberate -- a kit per project would not survive two projects wanting Figma.
-
-## config/
-
-`config/mise/`, `config/fish/` and `config/vscode-server/` mirror `~/.config/mise/`,
-`~/.config/fish/` and `~/.vscode-server/`, and are copied into the image. Unlike `kit/`,
-`config/` is committed: it defines the reproducible toolchain the template ships with, not
-personal configuration.
-
-`config/fish/config.fish` activates mise for interactive shells and sets defaults (editor,
-locale, path, aliases) scoped to what actually exists in the image.
-
-`config/vscode-server/data/Machine/settings.json` makes fish the default profile for VS
-Code's Remote-SSH terminal. Needed on top of the `agent` user's login shell: Docker
-Sandboxes forces `SHELL=/bin/bash` into every sandbox at creation time, and that is what
-both a plain `ssh` session and VS Code's terminal key off.
