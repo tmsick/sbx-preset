@@ -12,10 +12,6 @@
   (`${MISE_VERSION:-}`) rather than through `[env]`. Fix: move the other three
   out of `[env]` and read them the same way.
 
-- No CI builds the image on push/PR. Renovate auto-bumps the pinned
-  `MISE_VERSION` in the Dockerfile, but nothing verifies the bump still
-  `docker build`s before merge.
-
 - `ports.ubuntu.com:3128` is refused 11 times across six sandboxes in the daemon
   log. 3128 is Squid's port, so this reads as apt reaching for a proxy that isn't
   there rather than traffic worth allowing -- confirm before allowlisting it by
@@ -26,8 +22,8 @@
   `commands.*` to `setup.*`, both still under `schemaVersion: "2"`, and
   `kit/net/spec.yaml` stopped validating the moment sbx updated underneath it.
   Nothing catches that until a `sbx create` fails, so `sbx kit validate ./kit/*/`
-  belongs in whatever CI ends up being built (see above), and is worth running by
-  hand after an sbx update.
+  belongs in CI -- `.github/workflows/template.yml` builds/pushes the image now
+  but doesn't touch kits -- and is worth running by hand after an sbx update.
 
 - `tools/sbx-init` never publishes the kits, so it only works on this machine's
   clone. A second machine would want `sbx kit push` to an OCI registry or a

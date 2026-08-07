@@ -33,6 +33,13 @@ MISE_VERSION=v2026.8.1 mise run      # override the pin in the Dockerfile
 paths it `COPY`s. Unlike `kit/`, it's committed as-is -- it defines the reproducible toolchain the
 image ships with, not personal configuration -- and is what `mise run` builds, saves and loads.
 
+A GitHub Actions workflow ([`.github/workflows/template.yml`](.github/workflows/template.yml))
+publishes it to `ghcr.io/tmsick/sbx-preset:<variant>` on every push to `main` -- tagging both
+`<variant>` and `<variant>-<sha>` -- and, on a pull request touching `template/`, builds without
+pushing, to catch a Renovate `MISE_VERSION` bump that no longer builds. `sbx-init` still resolves
+the template from sandboxd's local image store (`mise run load`); consuming the ghcr.io image
+directly is `sbx run --template ghcr.io/tmsick/sbx-preset:<variant> claude`.
+
 `template/config/mise/`, `template/config/fish/` and `template/config/vscode-server/` mirror
 `~/.config/mise/`, `~/.config/fish/` and `~/.vscode-server/` inside the image.
 
