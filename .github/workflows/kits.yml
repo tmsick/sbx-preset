@@ -32,7 +32,7 @@ jobs:
           - kit-opt/atlassian
           - kit-opt/figma
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - run: |
           curl -fsSL https://get.docker.com | sudo REPO_ONLY=1 sh
@@ -55,7 +55,7 @@ jobs:
           - kit-opt/atlassian
           - kit-opt/figma
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - run: |
           curl -fsSL https://get.docker.com | sudo REPO_ONLY=1 sh
