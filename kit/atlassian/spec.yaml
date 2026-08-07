@@ -1,0 +1,16 @@
+# Attached only when a project needs it:
+# `--kit ghcr.io/tmsick/sbx-preset/kit/atlassian:latest`. The allowlist conventions
+# -- including why an entry follows a recorded refusal rather than a guess -- are in
+# kit/net/spec.yaml. Two domains because a Cloud site lives on <site>.atlassian.net
+# while the REST API is served from api.atlassian.com; grow the list from
+# `sbx policy log` if that isn't enough.
+schemaVersion: "2"
+kind: mixin
+name: net-atlassian
+displayName: Atlassian network access
+description: "Allows Jira/Confluence Cloud, for sandboxes that need it"
+permissions:
+  network:
+    allow:
+      - "**.atlassian.com:443"
+      - "**.atlassian.net:443"

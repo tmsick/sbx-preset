@@ -1,0 +1,14 @@
+# Attached only when a project needs it:
+# `--kit ghcr.io/tmsick/sbx-preset/kit/asana:latest`. The allowlist conventions --
+# including why an entry follows a recorded refusal rather than a guess -- are in
+# kit/net/spec.yaml. This starts at the domain the service is obviously reached on;
+# grow it from `sbx policy log` if that isn't enough.
+schemaVersion: "2"
+kind: mixin
+name: net-asana
+displayName: Asana network access
+description: "Allows Asana, for sandboxes that need it"
+permissions:
+  network:
+    allow:
+      - "**.asana.com:443"
