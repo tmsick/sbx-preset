@@ -1,7 +1,8 @@
-# Attached only when asked for: `sbx-init . --with asana`. The allowlist
-# conventions -- including why an entry follows a recorded refusal rather than a
-# guess -- are in kit/net/spec.yaml. This starts at the domain the service is
-# obviously reached on; grow it from `sbx policy log` if that isn't enough.
+# Attached only when asked for:
+# `--kit ghcr.io/tmsick/sbx-preset/kit-opt/asana:latest`. The allowlist conventions --
+# including why an entry follows a recorded refusal rather than a guess -- are in
+# kit/net/spec.yaml. This starts at the domain the service is obviously reached on;
+# grow it from `sbx policy log` if that isn't enough.
 schemaVersion: "2"
 kind: mixin
 name: net-asana

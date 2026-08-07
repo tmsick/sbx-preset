@@ -25,11 +25,3 @@
   a schema-breaking sbx release with no accompanying kit edit slips past it
   silently, so `sbx kit validate` is still worth running by hand after
   upgrading sbx locally.
-
-- `tools/sbx-init`'s `DEFAULT_KITS`/`OPT_KIT_SERVICES` and
-  `.github/workflows/kits.yml`'s publish matrix list the same six kits by hand
-  in two separate places (the point of dropping directory discovery was to let
-  `sbx-init` run without a clone, so it can no longer just list `kit/`). Adding
-  or removing a kit needs both edited, and nothing catches a missed one --
-  `sbx-init` would silently omit a new kit, or offer `--with` a service whose
-  ghcr.io package no longer exists.

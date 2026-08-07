@@ -21,8 +21,7 @@
 # needs a line at all: `balanced` allows github.com:443, so HTTPS remotes work
 # out of the box, but not port 22, and an SSH remote is refused without this.
 #
-# `tools/sbx-init allow DOMAIN` appends here, so keep the list one quoted entry
-# per line, sorted -- that's the shape it rewrites.
+# One quoted entry per line, sorted.
 schemaVersion: "2"
 kind: mixin
 name: net-default
