@@ -2,8 +2,8 @@
 
 A custom [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) template that adds
 [mise](https://mise.jdx.dev/) to the stock agent environment, built from [template/](#template).
-Personal configuration (Claude Code, git, and eventually others) is layered on at sandbox creation
-time via a [kit](https://docs.docker.com/ai/sandboxes/customize/), not baked into the image -- see
+Configuration (Claude Code, git, and eventually others) is layered on at sandbox creation time via
+a [kit](https://docs.docker.com/ai/sandboxes/customize/), not baked into the image -- see
 [kit/](#kit).
 
 ## Usage
@@ -18,7 +18,7 @@ sbx-init .
 sbx run --name claude-project   # attach later, from anywhere
 ```
 
-Other tasks: `build`, `save`, `clean`, `kit:init`.
+Other tasks: `build`, `save`, `clean`.
 
 Variables (read from the environment): `IMAGE`, `BASE_VARIANT`, `TAG`, `MISE_VERSION`.
 
@@ -86,14 +86,9 @@ writes to `kit-opt/figma/` instead.
 
 `kit/<name>/` directories are [sbx kits](https://docs.docker.com/ai/sandboxes/customize/):
 declarative artifacts applied at sandbox creation (`--kit`) or to a running sandbox (`sbx
-kit add`), not baked into the image. Personal, per-user configuration belongs here rather
-than in `template/` -- editing a kit takes effect on the next `sbx create`/`run`, with no
-image rebuild.
-
-Each kit's `spec.yaml` is committed; `files/` (the personal content) is gitignored. Run
-`mise run kit:init` once per clone to scaffold the `files/home/` dirs, then drop
-`CLAUDE.md`, `.gitconfig` and `.gitignore_global` straight in. `sbx kit validate
-./kit/<name>/` checks the artifact is well-formed.
+kit add`), not baked into the image -- editing a kit takes effect on the next `sbx
+create`/`run`, with no image rebuild. Each kit's `spec.yaml` and `files/` (where present)
+are committed whole; `sbx kit validate ./kit/<name>/` checks the artifact is well-formed.
 
 Two things to know before running `sbx kit add` by hand:
 
@@ -112,29 +107,35 @@ The kits themselves:
 - `kit/claude/` injects `CLAUDE.md` into `/home/agent/.claude/`. Only `CLAUDE.md` and
   `rules/` are worth injecting this way: `sbx` rewrites `~/.claude/settings.json` and
   `~/.claude.json` itself, and bind-mounts `~/.claude/skills` from the store seeded by
-  `sbx skills import`.
+  `sbx skills import`. `CLAUDE.md` itself stays empty, or generic enough for anyone to read.
 - `kit/git/` injects `~/.gitconfig` and `~/.gitignore_global` -- deliberately those paths,
   not the XDG-style `~/.config/git/{config,ignore}` a template `COPY` would use. sandboxd's
   `GitConfigCustomizer` forces `core.excludesFile` to `~/.gitignore_global` on every sandbox
   start (merging non-destructively into whatever the kit put there), so an XDG-style ignore
   file is left shadowed and never read. The kit also covers `git init` in the sandbox and
   repos outside the mounted workspace, which `sbx`'s own identity injection -- the local
-  `.git/config` of an already-git workspace -- misses.
+  `.git/config` of an already-git workspace -- misses. That injection is also where
+  `user.name`/`user.email` come from, not this kit, so `.gitconfig` here carries only
+  editor/alias/workflow preferences.
 - `kit/net/` carries a network allowlist rather than files, so the domains this setup
   routinely needs stop being a series of `sbx policy allow network` run by hand after every
   `sbx create`. Kit rules are scoped to their own sandbox, unlike a global `sbx policy
-allow`. The conventions for the list are in its `spec.yaml`; having no `files/`, it is
-  committed whole.
+allow`. The conventions for the list are in its `spec.yaml`.
 
 ## kit-opt/
 
 `kit-opt/<service>/` holds the kits only some projects want, attached with `sbx-init .
 --with <service>`. Everything in `kit/` goes to every sandbox; nothing in `kit-opt/` goes
 anywhere unless it is asked for. Which of the two directories a kit sits in is the whole
-difference between them -- no naming convention to remember, and `sbx kit validate ./kit/*/
-./kit-opt/*/` covers both.
+difference between them -- no naming convention to remember, and both validate the same way:
+`sbx kit validate ./kit/<name>/` takes one `REFERENCE` at a time, not a glob.
 
 They are named after the service (`figma/`, not `net-figma/`) because a kit is a unit of
 _capability_, not of mechanism: if Figma later needs an API token as well as network reach,
 `environment.variables` goes in the same kit. Splitting by service rather than by project
 is deliberate -- a kit per project would not survive two projects wanting Figma.
+
+A GitHub Actions workflow ([`.github/workflows/kits.yml`](.github/workflows/kits.yml)) runs
+`sbx kit validate` against every kit in both directories, on pull requests and on push to
+`main`, and on push to `main` also publishes every one of them to
+`ghcr.io/tmsick/sbx-preset/<path>:latest` (and `:<sha>`).

@@ -1,0 +1,74 @@
+name: kits
+
+on:
+  pull_request:
+    paths:
+      - "kit/**"
+      - "kit-opt/**"
+      - ".github/workflows/kits.yml"
+  push:
+    branches: [main]
+    paths:
+      - "kit/**"
+      - "kit-opt/**"
+      - ".github/workflows/kits.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        kit:
+          - kit/claude
+          - kit/git
+          - kit/net
+          - kit-opt/asana
+          - kit-opt/atlassian
+          - kit-opt/figma
+    steps:
+      - uses: actions/checkout@v6
+
+      - run: |
+          curl -fsSL https://get.docker.com | sudo REPO_ONLY=1 sh
+          sudo apt-get install -y docker-sbx
+
+      - run: sbx kit validate "${{ matrix.kit }}"
+
+  push:
+    if: github.event_name != 'pull_request'
+    needs: validate
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        kit:
+          - kit/claude
+          - kit/git
+          - kit/net
+          - kit-opt/asana
+          - kit-opt/atlassian
+          - kit-opt/figma
+    steps:
+      - uses: actions/checkout@v6
+
+      - run: |
+          curl -fsSL https://get.docker.com | sudo REPO_ONLY=1 sh
+          sudo apt-get install -y docker-sbx
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - run: |
+          set -euo pipefail
+          ref="ghcr.io/tmsick/sbx-preset/${{ matrix.kit }}"
+          sbx kit push "${{ matrix.kit }}" "$ref:latest"
+          sbx kit push "${{ matrix.kit }}" "$ref:${{ github.sha }}"
