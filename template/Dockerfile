@@ -56,15 +56,9 @@ RUN curl -fsSL https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh \
 # the non-interactive bash/sh an agent's tools invoke.
 ENV PATH="/home/agent/.local/share/mise/shims:${PATH}"
 
-# Shims alone don't apply mise's [env]/hooks, so interactive shells still need
-# real activation (mise documents having both as safe). Runtimes land under
-# ~/.local/share/mise, so this must run as agent.
+# Runtimes land under ~/.local/share/mise, so mise install below must run as
+# agent.
 USER agent
-RUN echo 'eval "$(mise activate bash)"' >> /home/agent/.bashrc
-
-# direnv (apt-installed above) needs the same kind of real shell hook as mise,
-# to auto-load/unload .envrc files on `cd`.
-RUN echo 'eval "$(direnv hook bash)"' >> /home/agent/.bashrc
 
 # config/fish/ mirrors ~/.config/fish/ (fish has no config.fish until we add one).
 COPY --chown=agent:agent config/fish/ /home/agent/.config/fish/
