@@ -2,7 +2,7 @@
 # It never becomes a runnable sandbox -- see README's "## template/" for why,
 # and for how to actually try a change.
 #
-#   make build                                # docker build claude-code-docker
+#   make build                                 # docker build claude-code-docker
 #   BASE_VARIANT=shell-docker make build       # the agent-less variant
 #   MISE_VERSION=v2026.8.1 make build          # override the pin in the Dockerfile
 #
