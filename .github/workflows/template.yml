@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        variant: [claude-code, shell]
+        variant: [claude-code-docker, shell-docker]
     steps:
       - uses: actions/checkout@v7
 
@@ -43,7 +43,7 @@ jobs:
           build-args: BASE_VARIANT=${{ matrix.variant }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            ghcr.io/tmsick/sbx-preset:${{ matrix.variant }}
-            ghcr.io/tmsick/sbx-preset:${{ matrix.variant }}-${{ github.sha }}
+            ghcr.io/tmsick/sbx-preset/${{ matrix.variant }}:latest
+            ghcr.io/tmsick/sbx-preset/${{ matrix.variant }}:${{ github.sha }}
           cache-from: type=gha,scope=${{ matrix.variant }}
           cache-to: type=gha,mode=max,scope=${{ matrix.variant }}

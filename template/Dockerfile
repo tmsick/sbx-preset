@@ -1,16 +1,21 @@
 # syntax=docker/dockerfile:1
 
 # Custom Docker Sandboxes template: mise on top of the stock agent environment.
-# Must extend docker/sandbox-templates:<variant>, not a generic base image.
-# Defaults to claude-code; --build-arg BASE_VARIANT=shell gives the agent-less
-# variant used by `sbx run shell`.
+# Must extend docker/sandbox-templates:<tag>, not a generic base image.
+# BASE_VARIANT is passed straight through as the upstream tag -- no implicit
+# suffixing -- so it must be a tag docker/sandbox-templates actually publishes.
 #
-# Always the `-docker` counterpart (e.g. claude-code-docker): only that tag
-# bakes in a full Docker Engine (privileged mode, dedicated /var/lib/docker
-# volume, dockerd autostart), the same one `sbx create`/`run` use by default.
-# The plain variant would silently drop Docker from the template.
-ARG BASE_VARIANT=claude-code
-FROM docker/sandbox-templates:${BASE_VARIANT}-docker AS base
+# Defaults to claude-code-docker; --build-arg BASE_VARIANT=shell-docker gives
+# the agent-less variant used by `sbx run shell`.
+#
+# The `-docker` tags are the ones that matter for `sbx create`/`run`: only
+# they bake in a full Docker Engine (privileged mode, dedicated
+# /var/lib/docker volume, dockerd autostart), the same one those commands use
+# by default. The plain tags (`claude-code`, `shell`) exist upstream too but
+# drop Docker entirely -- pass one only if you know you don't need nested
+# Docker.
+ARG BASE_VARIANT=claude-code-docker
+FROM docker/sandbox-templates:${BASE_VARIANT} AS base
 
 USER root
 
@@ -78,9 +83,12 @@ RUN mkdir -p /home/agent/.config/fish/completions \
 COPY --chown=agent:agent config/vscode-server/ /home/agent/.vscode-server/
 
 # claude-code's CMD launches `claude` directly; override to fish only for the
-# shell variant. CMD can't branch on ARG directly, so pick the stage instead.
+# shell variants. CMD can't branch on ARG directly, so pick the stage instead.
 FROM base AS final-claude-code
+FROM base AS final-claude-code-docker
 FROM base AS final-shell
+CMD ["fish"]
+FROM base AS final-shell-docker
 CMD ["fish"]
 
 FROM final-${BASE_VARIANT} AS final

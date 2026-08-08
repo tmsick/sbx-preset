@@ -15,7 +15,7 @@ sbx settings set kit.allowedSources '["docker.io/","ghcr.io/tmsick/"]'  # once
 
 cd /path/to/project
 sbx create \
-  --template ghcr.io/tmsick/sbx-preset:claude-code \
+  --template ghcr.io/tmsick/sbx-preset/claude-code-docker:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/claude:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/git:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/context7:latest \
@@ -37,7 +37,7 @@ make build                   # docker build the template image, as a local sanit
 Variables (read from the environment or the command line): `IMAGE`, `BASE_VARIANT`, `TAG`, `MISE_VERSION`.
 
 ```sh
-BASE_VARIANT=shell make build              # the agent-less variant used by `sbx run shell`
+BASE_VARIANT=shell-docker make build       # the agent-less variant used by `sbx run shell`
 MISE_VERSION=v2026.8.1 make build          # override the pin in the Dockerfile
 ```
 
@@ -48,8 +48,8 @@ paths it `COPY`s. Unlike `kit/`, it's committed as-is -- it defines the reproduc
 image ships with, not personal configuration -- and is what `make build` builds.
 
 A GitHub Actions workflow ([`.github/workflows/template.yml`](.github/workflows/template.yml))
-publishes it to `ghcr.io/tmsick/sbx-preset:<variant>` on every push to `main` -- tagging both
-`<variant>` and `<variant>-<sha>` -- and, on a pull request touching `template/`, builds without
+publishes it to `ghcr.io/tmsick/sbx-preset/<variant>` on every push to `main` -- tagging both
+`:latest` and `:<sha>` -- and, on a pull request touching `template/`, builds without
 pushing, to catch a Renovate `MISE_VERSION` bump that no longer builds. Consumers resolve it
 from `ghcr.io` directly (see Usage); `make build` is a local build-sanity check only --
 sandboxd's image store is separate from the host Docker daemon, so there's no local path from a
