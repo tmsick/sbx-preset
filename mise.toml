@@ -1,27 +1,23 @@
-# Build the sandbox template image and hand it to Docker Sandboxes.
+# docker build the template image, as a local sanity check before pushing.
 #
 # sandboxd keeps its own image store, separate from the host Docker daemon, so
-# an image built here is invisible to sbx until `docker save` + `sbx template
-# load`.
+# this build is invisible to `sbx` -- there's no local path from here to a
+# runnable sandbox. Push and let CI publish it, then pull from ghcr.io to try
+# it (see README).
 #
-#   mise run                             # build, save and load claude-code
-#   BASE_VARIANT=shell mise run          # the agent-less variant
-#   MISE_VERSION=v2026.8.1 mise run      # override the pin in the Dockerfile
-#   mise run build                       # stop after `docker build`
+#   mise run build                          # docker build claude-code
+#   BASE_VARIANT=shell mise run build       # the agent-less variant
+#   MISE_VERSION=v2026.8.1 mise run build   # override the pin in the Dockerfile
 #
-# Variables are read from the environment, e.g. `FOO=bar mise run` (see todo.md
-# for a known bug with this in shells where mise is already activated). TAG
-# defaults to BASE_VARIANT below; MISE_VERSION has no default here, so the
-# Dockerfile's pin stays authoritative.
+# Variables are read from the environment, e.g. `FOO=bar mise run build` (see
+# todo.md for a known bug with this in shells where mise is already
+# activated). TAG defaults to BASE_VARIANT below; MISE_VERSION has no default
+# here, so the Dockerfile's pin stays authoritative.
 
 [env]
 IMAGE = "{{ get_env(name='IMAGE', default='sbx-preset') }}"
 BASE_VARIANT = "{{ get_env(name='BASE_VARIANT', default='claude-code') }}"
 TAG = "{{ get_env(name='TAG', default=env.BASE_VARIANT) }}"
-
-[tasks.default]
-description = "Build, save and load the image (same as `mise run load`)"
-depends = ["load"]
 
 [tasks.build]
 description = "docker build the template image"
@@ -34,30 +30,3 @@ if [ -n "${MISE_VERSION:-}" ]; then
 fi
 docker build "${build_args[@]}" -f template/Dockerfile -t "$IMAGE:$TAG" template/
 '''
-
-[tasks.save]
-description = "docker save the built image into tmp/"
-depends = ["build"]
-run = '''
-#!/usr/bin/env bash
-# The trap throws away the truncated tarball a `docker save` killed partway
-# through would otherwise leave behind.
-set -euo pipefail
-mkdir -p tmp
-tarball="tmp/$IMAGE-$TAG.tar"
-trap 'rm -f "$tarball"' ERR
-docker save "$IMAGE:$TAG" -o "$tarball"
-'''
-
-[tasks.load]
-description = "sbx template load the tarball from tmp/"
-depends = ["save"]
-run = '''
-#!/usr/bin/env bash
-set -euo pipefail
-sbx template load "tmp/$IMAGE-$TAG.tar"
-'''
-
-[tasks.clean]
-description = "Remove the tmp/ tarball staging directory"
-run = "rm -rf tmp"

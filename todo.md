@@ -5,7 +5,7 @@
   Only `XDG_CONFIG_HOME`, `mise activate fish` and the `fish_add_path` calls are
   actually required; split the rest into a kit, as `kit/claude/` does.
 
-- `mise.toml`'s `IMAGE`/`BASE_VARIANT`/`TAG` overrides (e.g. `BASE_VARIANT=shell mise run`)
+- `mise.toml`'s `IMAGE`/`BASE_VARIANT`/`TAG` overrides (e.g. `BASE_VARIANT=shell mise run build`)
   silently don't work once mise has been activated in that shell: its
   `[env]` diff-tracking stomps the override back to the value exported on `cd`.
   `MISE_VERSION` is unaffected, being read directly in the task script
