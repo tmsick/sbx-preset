@@ -28,30 +28,30 @@ Add `--kit ghcr.io/tmsick/sbx-preset/kit/<service>:latest` for a project that ne
 rather than reusing it -- check `sbx ls` first.
 
 To work on this repository itself -- the Dockerfile, `template/config/`, or a kit's
-`spec.yaml` -- clone it and run `mise trust` once. Tasks are defined in `mise.toml`:
+`spec.yaml` -- clone it. Tasks are defined in `Makefile`:
 
 ```sh
-mise run build               # docker build the template image, as a local sanity check
+make build                   # docker build the template image, as a local sanity check
 ```
 
-Variables (read from the environment): `IMAGE`, `BASE_VARIANT`, `TAG`, `MISE_VERSION`.
+Variables (read from the environment or the command line): `IMAGE`, `BASE_VARIANT`, `TAG`, `MISE_VERSION`.
 
 ```sh
-BASE_VARIANT=shell mise run build          # the agent-less variant used by `sbx run shell`
-MISE_VERSION=v2026.8.1 mise run build      # override the pin in the Dockerfile
+BASE_VARIANT=shell make build              # the agent-less variant used by `sbx run shell`
+MISE_VERSION=v2026.8.1 make build          # override the pin in the Dockerfile
 ```
 
 ## template/
 
 `template/` is the Dockerfile's build context: `template/Dockerfile` plus `template/config/`, the
 paths it `COPY`s. Unlike `kit/`, it's committed as-is -- it defines the reproducible toolchain the
-image ships with, not personal configuration -- and is what `mise run build` builds.
+image ships with, not personal configuration -- and is what `make build` builds.
 
 A GitHub Actions workflow ([`.github/workflows/template.yml`](.github/workflows/template.yml))
 publishes it to `ghcr.io/tmsick/sbx-preset:<variant>` on every push to `main` -- tagging both
 `<variant>` and `<variant>-<sha>` -- and, on a pull request touching `template/`, builds without
 pushing, to catch a Renovate `MISE_VERSION` bump that no longer builds. Consumers resolve it
-from `ghcr.io` directly (see Usage); `mise run build` is a local build-sanity check only --
+from `ghcr.io` directly (see Usage); `make build` is a local build-sanity check only --
 sandboxd's image store is separate from the host Docker daemon, so there's no local path from a
 `docker build` here to a runnable sandbox. To actually try a change, push it and pull the
 published image once CI publishes.
