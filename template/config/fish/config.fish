@@ -15,3 +15,6 @@ fish_add_path -gpm "$HOME/bin"
 
 # mise (https://github.com/jdx/mise)
 mise activate fish | source
+
+# direnv (https://direnv.net)
+direnv hook fish | source

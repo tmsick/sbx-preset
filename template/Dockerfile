@@ -25,13 +25,16 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # curl/ca-certificates: mise installer. libatomic1: needed at runtime by pnpm's
 # standalone binary (and other Node.js SEA builds), missing on the minimal
 # Ubuntu base (https://github.com/pnpm/pnpm/issues/11531). fish: the sandbox's
-# default shell, set below.
+# default shell, set below. direnv: deliberately apt, not mise -- mise's own
+# docs say not to manage direnv through mise, since both hook PATH per
+# directory and can conflict (https://mise.jdx.dev/direnv.html).
 RUN apt-get update -y \
     && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     libatomic1 \
     fish \
+    direnv \
     && rm -rf /var/lib/apt/lists/*
 
 # Make fish the agent user's shell (usermod, not chsh -- no tty at build time).
@@ -58,6 +61,10 @@ ENV PATH="/home/agent/.local/share/mise/shims:${PATH}"
 # ~/.local/share/mise, so this must run as agent.
 USER agent
 RUN echo 'eval "$(mise activate bash)"' >> /home/agent/.bashrc
+
+# direnv (apt-installed above) needs the same kind of real shell hook as mise,
+# to auto-load/unload .envrc files on `cd`.
+RUN echo 'eval "$(direnv hook bash)"' >> /home/agent/.bashrc
 
 # config/fish/ mirrors ~/.config/fish/ (fish has no config.fish until we add one).
 COPY --chown=agent:agent config/fish/ /home/agent/.config/fish/

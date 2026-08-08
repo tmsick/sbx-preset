@@ -59,8 +59,8 @@ published image once CI publishes.
 `template/config/mise/`, `template/config/fish/` and `template/config/vscode-server/` mirror
 `~/.config/mise/`, `~/.config/fish/` and `~/.vscode-server/` inside the image.
 
-`template/config/fish/config.fish` activates mise for interactive shells and sets defaults (editor,
-locale, path, aliases) scoped to what actually exists in the image.
+`template/config/fish/config.fish` activates mise and direnv for interactive shells and sets
+defaults (editor, locale, path, aliases) scoped to what actually exists in the image.
 
 `template/config/vscode-server/data/Machine/settings.json` makes fish the default profile for VS
 Code's Remote-SSH terminal. Needed on top of the `agent` user's login shell: Docker Sandboxes
