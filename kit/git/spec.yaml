@@ -7,16 +7,8 @@
 #
 # Identity (user.name/user.email) is sbx's own job (see README), so nothing
 # here is personal.
-#
-# permissions.network.allow: `balanced` already allows github.com:443 (HTTPS
-# remotes work out of the box), but not port 22 -- an SSH remote is refused
-# without this. Network allowlist conventions are in the README (## kit/).
 schemaVersion: "2"
 kind: mixin
 name: git-config
 displayName: git config
 description: "Injects ~/.gitconfig and ~/.gitignore_global"
-permissions:
-  network:
-    allow:
-      - "github.com:22"

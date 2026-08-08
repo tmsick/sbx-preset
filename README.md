@@ -130,9 +130,8 @@ The kits:
   repos outside the mounted workspace, which `sbx`'s own identity injection -- the local
   `.git/config` of an already-git workspace -- misses. That injection is also where
   `user.name`/`user.email` come from, not this kit, so `.gitconfig` here carries only
-  editor/alias/workflow preferences. It also allows `github.com:22`: `balanced` already covers
-  github.com:443 (HTTPS remotes work out of the box), but not port 22, so an SSH remote needs
-  this or it's refused.
+  editor/alias/workflow preferences. It grants no network permissions: `balanced` already
+  covers github.com:443, and this preset's remotes are HTTPS-only (no SSH port 22).
 - `kit/context7/` allows `**.context7.com:443` -- library/API documentation lookups, used
   routinely enough by this setup's Claude Code config to warrant it on every sandbox.
 - `kit/asana/`, `kit/atlassian/` and `kit/figma/` each allow only the domains that one service
