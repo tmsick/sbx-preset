@@ -141,8 +141,8 @@ The kits:
   sandbox start, so browser automation runs as a subprocess of `claude` itself, inside the
   sandbox -- unlike `sbx mcp add --command`, whose local stdio servers run unsandboxed on the
   host. Its network allow list covers only Chromium's own binary download; which sites the
-  agent is actually allowed to navigate to is left to the consuming project, via `sbx policy
-  allow network` or another kit.
+  agent is actually allowed to navigate to is left to the consuming project, via `sbx policy allow network`
+  or another kit.
 
 A GitHub Actions workflow ([`.github/workflows/kits.yml`](.github/workflows/kits.yml)) runs
 `sbx kit validate` against every kit, on pull requests and on push to `main`, and on push to
