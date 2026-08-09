@@ -23,6 +23,12 @@ permissions:
     allow:
       - "**.playwright.dev:443"
       - "playwright.download.prss.microsoft.com:443"
+environment:
+  variables:
+    # mise's trust store is per-user; only the agent user has ever run mise
+    # (RUN mise install, in the Dockerfile), so root's first mise invocation
+    # below would otherwise fail with an untrusted-config error.
+    MISE_TRUSTED_CONFIG_PATHS: /home/agent/.config/mise
 setup:
   install:
     # apt-get needs root (default user for `install`); the download below
@@ -40,10 +46,14 @@ setup:
     # --no-sandbox: Chromium's own process sandbox needs privileges a
     # container often doesn't grant; this is Microsoft's own default for
     # containerized deployments of this same server.
+    #
+    # `su` (which runs startup commands) drops the container's PATH, so
+    # `claude` isn't found without exporting it again first.
     - command:
         - sh
         - -c
         - >-
+          export PATH="$HOME/.local/bin:$HOME/.claude/local:$PATH" &&
           claude mcp get playwright >/dev/null 2>&1 ||
           claude mcp add --scope user playwright --
           npx -y @playwright/mcp@latest --browser chromium --headless --no-sandbox
