@@ -1,0 +1,50 @@
+# Attached only when a project needs browser automation:
+# `--kit ghcr.io/tmsick/sbx-preset/kit/playwright:latest`. Installs Chromium
+# and registers @playwright/mcp with Claude Code so it runs as a subprocess of
+# `claude` itself, inside the sandbox -- unlike `sbx mcp add --command`, whose
+# local stdio servers run unsandboxed on the HOST (see that command's own
+# --help). Keeping the browser inside the sandbox means it's already bound by
+# the sandbox's own network policy; there's no separate mechanism to wire up
+# for that.
+#
+# The two domains below are only what downloading the browser itself needs --
+# verified against playwright-core's own registry source, not guessed. `sbx
+# policy init balanced` already covers the ubuntu/npm reach the install step
+# also needs (see README's network allowlist conventions). Which sites the
+# agent is actually allowed to navigate to is the consuming project's call,
+# via `sbx policy allow network` or another kit -- same as any other kit here.
+schemaVersion: "2"
+kind: mixin
+name: playwright-mcp
+displayName: Playwright MCP
+description: "Installs Chromium and registers @playwright/mcp with Claude Code, so browser automation runs inside the sandbox"
+permissions:
+  network:
+    allow:
+      - "**.playwright.dev:443"
+      - "playwright.download.prss.microsoft.com:443"
+setup:
+  install:
+    # apt-get needs root (default user for `install`); the download below
+    # runs as the agent user so the browser cache lands under its own home,
+    # where @playwright/mcp will actually look for it at startup.
+    - command: "npx -y playwright@latest install-deps chromium"
+      description: "Install Chromium's OS-level dependencies"
+    - command: "npx -y @playwright/mcp@latest install-browser chromium"
+      user: "1000"
+      description: "Download the exact Chromium build @playwright/mcp uses"
+  startup:
+    # `claude mcp get` exits non-zero when unregistered, so a restart/recreate
+    # doesn't re-add on top of an existing registration. It also doesn't pick
+    # up a changed command below -- remove the server by hand first for that.
+    # --no-sandbox: Chromium's own process sandbox needs privileges a
+    # container often doesn't grant; this is Microsoft's own default for
+    # containerized deployments of this same server.
+    - command:
+        - sh
+        - -c
+        - >-
+          claude mcp get playwright >/dev/null 2>&1 ||
+          claude mcp add --scope user playwright --
+          npx -y @playwright/mcp@latest --browser chromium --headless --no-sandbox
+      description: "Register @playwright/mcp with Claude Code if not already registered"

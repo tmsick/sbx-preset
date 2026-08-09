@@ -90,10 +90,11 @@ Two things to know before running `sbx kit add` by hand:
 
 `claude`, `git` and `context7` are what the Usage quickstart attaches by default -- generic
 enough to want on every sandbox. `asana`, `atlassian` and `figma` are network access for one
-service each, worth adding only when a project actually talks to it. There's no directory split
-between the two groups: every kit is attached the same way, an explicit `--kit` flag, so which
-of these six a project needs is a call made per `sbx create`, not encoded in the repository
-layout.
+service each, worth adding only when a project actually talks to it. `playwright` is different
+again -- it installs a browser and registers an MCP server rather than just opening network
+access. There's no directory split between these groups: every kit is attached the same way, an
+explicit `--kit` flag, so which of these seven a project needs is a call made per `sbx create`,
+not encoded in the repository layout.
 
 Kits are named after the capability they provide (`figma/`, not `net-figma/`), not the mechanism
 they happen to use today: if Figma later needs an API token as well as network reach,
@@ -136,6 +137,12 @@ The kits:
   routinely enough by this setup's Claude Code config to warrant it on every sandbox.
 - `kit/asana/`, `kit/atlassian/` and `kit/figma/` each allow only the domains that one service
   needs.
+- `kit/playwright/` installs Chromium and registers `@playwright/mcp` with Claude Code at every
+  sandbox start, so browser automation runs as a subprocess of `claude` itself, inside the
+  sandbox -- unlike `sbx mcp add --command`, whose local stdio servers run unsandboxed on the
+  host. Its network allow list covers only Chromium's own binary download; which sites the
+  agent is actually allowed to navigate to is left to the consuming project, via `sbx policy
+  allow network` or another kit.
 
 A GitHub Actions workflow ([`.github/workflows/kits.yml`](.github/workflows/kits.yml)) runs
 `sbx kit validate` against every kit, on pull requests and on push to `main`, and on push to

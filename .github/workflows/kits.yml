@@ -29,6 +29,7 @@ jobs:
           - kit/asana
           - kit/atlassian
           - kit/figma
+          - kit/playwright
     steps:
       - uses: actions/checkout@v7
 
@@ -52,6 +53,7 @@ jobs:
           - kit/asana
           - kit/atlassian
           - kit/figma
+          - kit/playwright
     steps:
       - uses: actions/checkout@v7
 
