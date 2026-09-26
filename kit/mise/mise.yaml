@@ -1,18 +1,18 @@
 # syntax=docker/sandbox-kit:3
 #
-# mise, the tools config/mise/config.toml asks for, and mise's integration
-# into every shell the sandbox runs: fish via conf.d/mise.fish (in the
-# overlay), bash and Claude Code's Bash tool via the hook below. A tool's shell
-# integration belongs to the kit that installs the tool, so no other kit here
-# needs to know mise exists.
+# mise and its integration into every shell the sandbox runs: fish via
+# conf.d/mise.fish (in the overlay), bash and Claude Code's Bash tool via the
+# hook below. A tool's shell integration belongs to the kit that installs the
+# tool, so no other kit here needs to know mise exists. No tools are baked in;
+# install them in the sandbox as a project needs them.
 #
-# Not Docker's docker.io/docker/sbx-kit-mise: that one ships mise alone, with
-# no default tools, and activates it only in interactive bash (~/.bashrc), so
-# the workload's own tools still win in Claude Code's Bash tool.
+# Not Docker's docker.io/docker/sbx-kit-mise: it activates mise only in
+# interactive bash (~/.bashrc), so the workload's own tools still win in
+# Claude Code's Bash tool, and it has no fish integration.
 schemaVersion: "3"
 kind: mixin
 displayName: mise
-description: "mise with a default toolset, ahead of the workload's own tools in every shell"
+description: "mise, ahead of the workload's own tools in every shell"
 sourceUrl: https://github.com/tmsick/sbx-preset
 
 capabilities:

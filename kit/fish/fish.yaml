@@ -1,9 +1,9 @@
 # syntax=docker/sandbox-kit:3
 #
-# fish as the agent user's shell: config.fish (editor, locale, path, aliases)
+# fish as the agent user's shell: config.fish (locale, path, aliases)
 # and a VS Code Remote-SSH terminal profile. Other tools' fish integration
 # ships with the kit that installs the tool (e.g. the mise kit's
-# conf.d/mise.fish), not here.
+# conf.d/mise.fish, the nvim kit's conf.d/nvim.fish), not here.
 schemaVersion: "3"
 kind: mixin
 displayName: fish

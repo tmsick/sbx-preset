@@ -1,7 +1,7 @@
 # TODO
 
-- `kit/fish/config/fish/config.fish` mixes personal preferences (`EDITOR nvim`, aliases
-  for git/nvim/docker/less) into what README documents as the fish kit's shell setup.
+- `kit/fish/config/fish/config.fish` mixes personal preferences (`BAT_THEME`, aliases
+  for bat/git/docker/less) into what README documents as the fish kit's shell setup.
   Only `XDG_CONFIG_HOME` and the `fish_add_path` calls are
   actually required; split the rest into a kit, as `kit/claude-config/` does.
 

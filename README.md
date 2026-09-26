@@ -1,9 +1,9 @@
 # sbx-preset
 
 [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) [kits](https://docs.docker.com/ai/sandboxes/customize/)
-(v3) layered onto Docker's published agent workloads: [mise](https://mise.jdx.dev/) with a default
-toolset ([kit/mise/](#kitmise)) and fish ([kit/fish/](#kitfish)), plus configuration and
-per-service network access ([the other kits](#the-other-kits)).
+(v3) layered onto Docker's published agent workloads: [mise](https://mise.jdx.dev/)
+([kit/mise/](#kitmise)), fish ([kit/fish/](#kitfish)) and Neovim ([kit/nvim/](#kitnvim)), plus
+configuration and per-service network access ([the other kits](#the-other-kits)).
 
 ## Usage
 
@@ -17,6 +17,7 @@ sbx create --name "claude-$(basename "$PWD")" \
   docker.io/docker/sbx-kit-claude:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/mise:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/fish:latest \
+  --kit ghcr.io/tmsick/sbx-preset/kit/nvim:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/claude-config:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/git:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/context7:latest \
@@ -91,26 +92,24 @@ and on push to `main` also publishes each to `ghcr.io/tmsick/sbx-preset/kit/<nam
 `:latest` and `:<sha>`.
 
 A tool's shell integration ships with the kit that installs the tool: the mise kit wires mise into
-fish (`conf.d/mise.fish`) and bash (`/etc/sandbox-persistent.sh`), so the fish kit needs no
-knowledge of mise, and either works without the other.
+fish (`conf.d/mise.fish`) and bash (`/etc/sandbox-persistent.sh`), the nvim kit makes nvim fish's
+`EDITOR` (`conf.d/nvim.fish`), and the fish kit knows about neither -- any of the three works
+without the others.
 
 ### kit/mise/
 
-mise, the tools `config/mise/config.toml` asks for, and mise's shell integration.
-`mise.dockerfile` builds on `docker/sandbox-templates:shell-docker` -- the base Docker's agent
-workloads are built from (their `com.docker.sandboxes.base` label) -- so mise's precompiled
-runtimes link against the glibc they run on, then stages:
+mise and its shell integration -- no tools. Install them in the sandbox as a project needs them
+(`mise install` against the project's own `mise.toml`, or `mise use`); a project pins its
+toolchain and sets its environment variables (`[env]`) there, which is why there is no direnv
+here. `mise.dockerfile` stages:
 
 - `/usr/local/bin/mise`, from its official installer, pinned by `ARG MISE_VERSION` and bumped by
   Renovate.
-- `libatomic.so.1`, lifted from the apt package: pnpm's standalone binary (and other Node.js SEA
-  builds) needs it, and the Ubuntu base lacks it.
-- `~/.config/mise/`, `~/.local/share/mise/` (everything `mise install` installed), and fish's
-  `conf.d/mise.fish` (`mise activate fish`) and `completions/mise.fish`.
-
-`config.toml` asks for `latest` (or `lts`) on purpose: it provides reasonably current defaults
-for commonly needed tools. A project pins its own toolchain in its own `mise.toml`, and sets its
-environment variables there too (`[env]`) -- which is why there is no direnv here.
+- `libatomic.so.1`, lifted from the apt package of the Ubuntu base Docker's agent workloads are
+  built from (`docker/sandbox-templates:shell-docker`, their `com.docker.sandboxes.base` label):
+  pnpm's standalone binary (and other Node.js SEA builds) needs it once mise installs one, and
+  the base lacks it.
+- fish's `conf.d/mise.fish` (`mise activate fish`) and `completions/mise.fish`.
 
 `mise.yaml`'s install hook prepends mise's shims to PATH in `/etc/sandbox-persistent.sh`. The
 overlay's own `ENV PATH` is appended to the workload's at assembly, so the workload's
@@ -119,9 +118,9 @@ overlay's own `ENV PATH` is appended to the workload's at assembly, so the workl
 Claude Code Bash tool call, gets the shims first. Interactive fish gets the same precedence from
 `mise activate`.
 
-Not Docker's `docker.io/docker/sbx-kit-mise`: it ships mise alone, with no default tools, and
-activates it only in interactive bash, so the workload's own tools still win in Claude Code's Bash
-tool. The two can't be composed together anyway: both stage `mise/` sources.
+Not Docker's `docker.io/docker/sbx-kit-mise`: it activates mise only in interactive bash, so the
+workload's own tools still win in Claude Code's Bash tool, and it has no fish integration. The two
+can't be composed together anyway: both stage `mise/` sources.
 
 ### kit/fish/
 
@@ -129,12 +128,24 @@ fish, from upstream's static build (4.x embeds its functions and completions), p
 FISH_VERSION` and bumped by Renovate. `fish.yaml`'s install hook makes fish the `agent` user's
 login shell (`/etc/shells`, `usermod`).
 
-`config/fish/config.fish` sets defaults (editor, locale, path, aliases) scoped to what actually
-exists in the sandbox.
+`config/fish/config.fish` sets defaults (locale, path, aliases) scoped to what actually exists in
+the sandbox.
 
 `config/vscode-server/data/Machine/settings.json` makes fish the default profile for VS Code's
 Remote-SSH terminal. Needed on top of the login shell: Docker Sandboxes forces `SHELL=/bin/bash`
 into every sandbox, and that is what both a plain `ssh` session and VS Code's terminal key off.
+
+### kit/nvim/
+
+Neovim, from its release tarball (kept whole under `/opt/nvim`, linked from `/usr/local/bin`),
+pinned by `ARG NVIM_VERSION` and bumped by Renovate, and `conf.d/nvim.fish`, which sets `EDITOR`
+and `VISUAL` and aliases `vim`. git follows them: the git kit sets no `core.editor`, which would
+otherwise take precedence. No nvim configuration ships with it. Outside fish -- Claude Code's Bash
+tool -- `EDITOR` stays unset, which is fine for an agent that never opens an editor.
+
+Not Docker's `docker.io/docker/sbx-kit-neovim`: it sets `EDITOR` only in `/etc/profile.d`, which
+fish never reads, and ships a starter `~/.config/nvim/init.lua` that a real nvim config would
+collide with.
 
 ### The other kits
 
@@ -181,7 +192,8 @@ hand.
   `git init` in the sandbox and repos outside the mounted workspace, which `sbx`'s own identity
   injection -- the local `.git/config` of an already-git workspace -- misses. That injection is
   also where `user.name`/`user.email` come from, not this kit, so `.gitconfig` here carries only
-  editor/alias/workflow preferences. It grants no network permissions: `balanced` already covers
+  alias/workflow preferences -- no `core.editor`, so git follows `EDITOR` (see
+  [kit/nvim/](#kitnvim)). It grants no network permissions: `balanced` already covers
   github.com:443, and this preset's remotes are HTTPS-only (no SSH port 22).
 - `kit/context7/` allows `**.context7.com:443` -- library/API documentation lookups, used
   routinely enough by this setup's Claude Code config to warrant it on every sandbox.

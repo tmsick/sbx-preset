@@ -24,6 +24,19 @@
       "packageNameTemplate": "fish-shell/fish-shell",
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "Bump the pinned Neovim version installed by the nvim kit",
+      "managerFilePatterns": ["/^kit\\/nvim\\/nvim\\.dockerfile$/"],
+      "matchStrings": [
+        "ARG NVIM_VERSION=(?<currentValue>\\d+\\.\\d+\\.\\d+)\\s"
+      ],
+      "depNameTemplate": "neovim/neovim",
+      "packageNameTemplate": "neovim/neovim",
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver",
+      "extractVersionTemplate": "^v(?<version>.*)$"
     }
   ]
 }

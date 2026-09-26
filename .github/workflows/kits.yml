@@ -25,6 +25,7 @@ jobs:
         kit:
           - mise
           - fish
+          - nvim
           - claude-config
           - git
           - context7
