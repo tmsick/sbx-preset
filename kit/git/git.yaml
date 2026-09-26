@@ -1,4 +1,6 @@
-# Injects git config at sandbox creation (`--kit`) or via `sbx kit add`.
+# syntax=docker/sandbox-kit:3
+#
+# Injects git config.
 #
 # Targets files/home/.gitconfig and files/home/.gitignore_global, not the
 # XDG-style ~/.config/git/{config,ignore}: sandboxd forces core.excludesFile to
@@ -7,8 +9,17 @@
 #
 # Identity (user.name/user.email) is sbx's own job (see README), so nothing
 # here is personal.
-schemaVersion: "2"
+schemaVersion: "3"
 kind: mixin
-name: git-config
 displayName: git config
 description: "Injects ~/.gitconfig and ~/.gitignore_global"
+# Staged rather than a bare `COPY --chown` onto scratch, which would hand the
+# implicitly created /home to uid 1000 too: a mixin's directory entries
+# replace the workload's, owner included.
+build: |
+  FROM busybox:stable AS build
+  COPY files/home/ /out/home/agent/
+  RUN chown -R 1000:1000 /out/home/agent && chown 0:0 /out /out/home
+
+  FROM scratch
+  COPY --from=build /out/ /

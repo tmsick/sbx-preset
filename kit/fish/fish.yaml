@@ -1,0 +1,24 @@
+# syntax=docker/sandbox-kit:3
+#
+# fish as the agent user's shell: config.fish (editor, locale, path, aliases)
+# and a VS Code Remote-SSH terminal profile. Other tools' fish integration
+# ships with the kit that installs the tool (e.g. the mise kit's
+# conf.d/mise.fish), not here.
+schemaVersion: "3"
+kind: mixin
+displayName: fish
+description: "fish as the login shell and VS Code terminal"
+sourceUrl: https://github.com/tmsick/sbx-preset
+
+capabilities:
+  - type: com.docker.sandbox/lifecycle@1
+    config:
+      install:
+        # The overlay can ship the fish binary but not an /etc/passwd edit:
+        # that file belongs to the workload.
+        - command: |
+            set -e
+            grep -qx /usr/local/bin/fish /etc/shells || echo /usr/local/bin/fish >> /etc/shells
+            usermod --shell /usr/local/bin/fish agent
+          user: "0"
+          description: Make fish the agent user's login shell

@@ -1,0 +1,42 @@
+# syntax=docker/sandbox-kit:3
+#
+# mise, the tools config/mise/config.toml asks for, and mise's integration
+# into every shell the sandbox runs: fish via conf.d/mise.fish (in the
+# overlay), bash and Claude Code's Bash tool via the hook below. A tool's shell
+# integration belongs to the kit that installs the tool, so no other kit here
+# needs to know mise exists.
+#
+# Not Docker's docker.io/docker/sbx-kit-mise: that one ships mise alone, with
+# no default tools, and activates it only in interactive bash (~/.bashrc), so
+# the workload's own tools still win in Claude Code's Bash tool.
+schemaVersion: "3"
+kind: mixin
+displayName: mise
+description: "mise with a default toolset, ahead of the workload's own tools in every shell"
+sourceUrl: https://github.com/tmsick/sbx-preset
+
+capabilities:
+  - type: com.docker.sandbox/lifecycle@1
+    config:
+      install:
+        # The overlay's ENV PATH is appended to the workload's, so the
+        # workload's /usr/bin/node, python3, ... would shadow mise's. This file
+        # is BASH_ENV and CLAUDE_ENV_FILE on Docker's templates, and the
+        # templates' ~/.bashrc sources it: so every bash, and every Claude Code
+        # Bash tool call, gets the shims first. A hook rather than overlay
+        # content because the file is the workload's -- an overlay would
+        # replace it, not append to it.
+        - command: |
+            set -e
+            f=/etc/sandbox-persistent.sh
+            [ -f "$f" ] || exit 0
+            grep -qF 'mise shims (sbx-preset mise kit)' "$f" && exit 0
+            cat >> "$f" <<'EOF'
+            # mise shims (sbx-preset mise kit): ahead of the workload's own tools.
+            case "$PATH" in
+              /home/agent/.local/share/mise/shims:*) ;;
+              *) export PATH="/home/agent/.local/share/mise/shims:$PATH" ;;
+            esac
+            EOF
+          user: "0"
+          description: Put mise shims ahead of the workload's tools in sandbox-persistent.sh

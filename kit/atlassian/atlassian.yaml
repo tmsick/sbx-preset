@@ -1,16 +1,21 @@
+# syntax=docker/sandbox-kit:3
+#
 # Attached only when a project needs it:
 # `--kit ghcr.io/tmsick/sbx-preset/kit/atlassian:latest`. Network allowlist
 # conventions -- including why an entry follows a recorded refusal rather than
 # a guess -- are in the README (## kit/). Two domains because a Cloud site
 # lives on <site>.atlassian.net while the REST API is served from
 # api.atlassian.com; grow the list from `sbx policy log` if that isn't enough.
-schemaVersion: "2"
+#
+# Declaration-only: no content, just the runtime egress it grants.
+schemaVersion: "3"
 kind: mixin
-name: net-atlassian
 displayName: Atlassian network access
 description: "Allows Jira/Confluence Cloud, for sandboxes that need it"
-permissions:
-  network:
-    allow:
-      - "**.atlassian.com:443"
-      - "**.atlassian.net:443"
+capabilities:
+  - type: com.docker.sandbox/network-policy@1
+    config:
+      runtime:
+        allow:
+          - "**.atlassian.com:443"
+          - "**.atlassian.net:443"

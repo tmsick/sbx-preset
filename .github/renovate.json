@@ -3,13 +3,25 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Bump the pinned mise version installed by the Dockerfile",
-      "managerFilePatterns": ["/^template\\/Dockerfile$/"],
+      "description": "Bump the pinned mise version installed by the mise kit",
+      "managerFilePatterns": ["/^kit\\/mise\\/mise\\.dockerfile$/"],
       "matchStrings": [
         "ARG MISE_VERSION=(?<currentValue>v\\d+\\.\\d+\\.\\d+)\\s"
       ],
       "depNameTemplate": "jdx/mise",
       "packageNameTemplate": "jdx/mise",
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "Bump the pinned fish version installed by the fish kit",
+      "managerFilePatterns": ["/^kit\\/fish\\/fish\\.dockerfile$/"],
+      "matchStrings": [
+        "ARG FISH_VERSION=(?<currentValue>\\d+\\.\\d+\\.\\d+)\\s"
+      ],
+      "depNameTemplate": "fish-shell/fish-shell",
+      "packageNameTemplate": "fish-shell/fish-shell",
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver"
     }
