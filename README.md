@@ -13,27 +13,28 @@ For your own project, no clone of this repository needed:
 sbx settings set kit.allowedSources '["docker.io/","ghcr.io/tmsick/"]'  # once
 
 cd /path/to/project
-sbx create --name "claude-$(basename "$PWD")" \
+sbx run --name "claude-$(basename "$PWD")" \
   docker.io/docker/sbx-kit-claude:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/mise:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/fish:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/nvim:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/claude-config:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/git:latest \
-  --kit ghcr.io/tmsick/sbx-preset/kit/context7:latest \
-  .
-sbx run --name "claude-$(basename "$PWD")"   # attach, from anywhere
+  --kit ghcr.io/tmsick/sbx-preset/kit/context7:latest
 ```
 
-Run the first `sbx create` or `sbx run` from an interactive terminal: sbx asks once to approve the
-workload's use of your Anthropic credential and records it in `~/.config/sbx/credentials.yaml`.
-Without that approval (`< /dev/null`, CI) the sandbox is created with the credential withheld.
+`sbx run` mounts the current directory, creates the sandbox if none by that name exists, and
+attaches to it. Once it exists, `sbx run --name "claude-$(basename "$PWD")"` alone gets you back
+in; with `--kit`, sbx refuses an existing sandbox rather than reusing it.
+
+Run the first `sbx run` from an interactive terminal: sbx asks once to approve the workload's use
+of your Anthropic credential and records it in `~/.config/sbx/credentials.yaml`. Without that
+approval (`< /dev/null`, CI) the sandbox is created with the credential withheld.
 
 Add `--kit ghcr.io/tmsick/sbx-preset/kit/<service>:latest` for a project that needs one (see
 [the other kits](#the-other-kits)). Kits are fixed at creation: v3 sandboxes don't support `sbx
-kit add`, so changing a sandbox's kits means creating a new one. Running this again for a
-project that already has a sandbox creates a second one rather than reusing it -- check `sbx ls`
-first. Inside a sandbox, `ls /usr/share/sandbox/kit/` lists the kits it was built from.
+kit add`, so changing a sandbox's kits means removing it (`sbx rm`) and running this again. Inside
+a sandbox, `ls /usr/share/sandbox/kit/` lists the kits it was built from.
 
 To use VS Code (and its Claude Code extension) inside the sandbox, connect over SSH:
 
