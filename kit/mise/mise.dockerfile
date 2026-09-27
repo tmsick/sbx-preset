@@ -12,8 +12,10 @@ FROM docker/sandbox-templates:shell-docker AS build
 USER root
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Pinned so a rebuild doesn't silently pick up a new release.
-ARG MISE_VERSION=v2026.9.14
+# Supplied by the frontend from mise.yaml's `version` arg -- the one place the
+# release is pinned -- without the `v` the installer expects. No default here,
+# so a build outside the frontend fails rather than guessing.
+ARG MISE_VERSION
 
 # libatomic1: needed at runtime by pnpm's standalone binary (and other Node.js
 # SEA builds) once mise installs one, and missing on the Ubuntu base
@@ -26,9 +28,10 @@ RUN apt-get update -y \
     && cp -a --parents $(dpkg -L libatomic1 | grep '/libatomic\.so') /out/
 
 # Official installer, into a shared path (its default ~/.local/bin would land
-# in /root). MISE_VERSION reaches it as an env var.
+# in /root). It reads the release from MISE_VERSION, `v`-prefixed.
 RUN mkdir -p /out/usr/local/bin \
-    && curl -fsSL https://mise.run | MISE_INSTALL_PATH=/out/usr/local/bin/mise sh \
+    && curl -fsSL https://mise.run \
+    | MISE_VERSION="v${MISE_VERSION:?}" MISE_INSTALL_PATH=/out/usr/local/bin/mise sh \
     && /out/usr/local/bin/mise --version
 
 # config/ mirrors ~/.config/: conf.d/mise.fish activates mise in fish.

@@ -13,3 +13,18 @@ kind: mixin
 displayName: Neovim
 description: "Neovim, as EDITOR in fish"
 sourceUrl: https://github.com/tmsick/sbx-preset
+
+# The Neovim release, declared once: handed to nvim.dockerfile as NVIM_VERSION
+# and expanded into `provides`, so the kit can't claim a version it doesn't
+# ship. Bumped by Renovate.
+args:
+  version:
+    default: "0.12.5"
+    pattern: '^[0-9]+\.[0-9]+\.[0-9]+$'
+    description: Neovim release to install
+    buildArg: NVIM_VERSION
+
+provides: ["nvim@${{ kit.args.version }}"]
+# conf.d/nvim.fish takes effect when a fish kit is composed alongside, and is
+# inert otherwise.
+integrates: ["fish"]

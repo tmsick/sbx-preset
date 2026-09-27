@@ -9,8 +9,10 @@ USER root
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ARG TARGETARCH
-# Pinned so a rebuild doesn't silently pick up a new release.
-ARG NVIM_VERSION=0.12.5
+# Supplied by the frontend from nvim.yaml's `version` arg -- the one place the
+# release is pinned. No default here, so a build outside the frontend fails
+# rather than guessing.
+ARG NVIM_VERSION
 
 # The tarball is self-contained (runtime files, parsers) and expects to stay
 # together, so it goes to /opt/nvim with a link from /usr/local/bin -- one the

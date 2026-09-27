@@ -15,6 +15,22 @@ displayName: mise
 description: "mise, ahead of the workload's own tools in every shell"
 sourceUrl: https://github.com/tmsick/sbx-preset
 
+# The mise release, declared once: handed to mise.dockerfile as MISE_VERSION
+# and expanded into `provides`, so the kit can't claim a version it doesn't
+# ship. No leading `v`: a provide's version can't carry one; the Dockerfile
+# adds it for the installer. Bumped by Renovate.
+args:
+  version:
+    default: "2026.9.14"
+    pattern: '^[0-9]+\.[0-9]+\.[0-9]+$'
+    description: mise release to install
+    buildArg: MISE_VERSION
+
+provides: ["mise@${{ kit.args.version }}"]
+# conf.d/mise.fish takes effect when a fish kit is composed alongside, and is
+# inert otherwise; the bash side works either way.
+integrates: ["fish"]
+
 capabilities:
   - type: com.docker.sandbox/lifecycle@1
     config:

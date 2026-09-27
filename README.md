@@ -52,7 +52,8 @@ sbx create --name kit-test docker.io/docker/sbx-kit-claude:latest \
 
 `make build` (or `make build-<kit>`) runs `docker buildx build` on every kit (or one) as a quicker
 check; the kit frontend validates each descriptor as it builds. Variables (read from the
-environment or the command line): `IMAGE`, `TAG`, `MISE_VERSION`.
+environment or the command line): `IMAGE`, `TAG`, and `KIT_VERSION`, which overrides the
+`version` arg of the kit being built (`KIT_VERSION=2026.8.1 make build-mise`).
 
 ## kit/
 
@@ -96,6 +97,14 @@ fish (`conf.d/mise.fish`) and bash (`/etc/sandbox-persistent.sh`), the nvim kit 
 `EDITOR` (`conf.d/nvim.fish`), and the fish kit knows about neither -- any of the three works
 without the others.
 
+Kit-to-kit relations are declared, not implied by names. A kit that installs a tool `provides`
+it, at the version it ships (`mise@2026.9.14`), and a kit whose integration takes effect only
+alongside another's tool `integrates` it (`integrates: ["fish"]` on mise and nvim): sbx orders
+composition by these -- fish's install hook runs before mise's whatever the `--kit` order -- and
+refuses a set where two kits provide one name. The version comes from the kit's `version` arg
+(`buildArg:` into the Dockerfile, expanded into `provides`), the one place a release is pinned
+and what Renovate bumps; a published kit's provides must carry one.
+
 ### kit/mise/
 
 mise and its shell integration -- no tools. Install them in the sandbox as a project needs them
@@ -103,8 +112,7 @@ mise and its shell integration -- no tools. Install them in the sandbox as a pro
 toolchain and sets its environment variables (`[env]`) there, which is why there is no direnv
 here. `mise.dockerfile` stages:
 
-- `/usr/local/bin/mise`, from its official installer, pinned by `ARG MISE_VERSION` and bumped by
-  Renovate.
+- `/usr/local/bin/mise`, from its official installer, at the `version` arg.
 - `libatomic.so.1`, lifted from the apt package of the Ubuntu base Docker's agent workloads are
   built from (`docker/sandbox-templates:shell-docker`, their `com.docker.sandboxes.base` label):
   pnpm's standalone binary (and other Node.js SEA builds) needs it once mise installs one, and
@@ -120,13 +128,13 @@ Claude Code Bash tool call, gets the shims first. Interactive fish gets the same
 
 Not Docker's `docker.io/docker/sbx-kit-mise`: it activates mise only in interactive bash, so the
 workload's own tools still win in Claude Code's Bash tool, and it has no fish integration. The two
-can't be composed together anyway: both stage `mise/` sources.
+can't be composed together anyway: both provide `mise`.
 
 ### kit/fish/
 
-fish, from upstream's static build (4.x embeds its functions and completions), pinned by `ARG
-FISH_VERSION` and bumped by Renovate. `fish.yaml`'s install hook makes fish the `agent` user's
-login shell (`/etc/shells`, `usermod`).
+fish, from upstream's static build (4.x embeds its functions and completions), at the `version`
+arg. `fish.yaml`'s install hook makes fish the `agent` user's login shell (`/etc/shells`,
+`usermod`).
 
 `config/fish/config.fish` sets defaults (locale, path, aliases) scoped to what actually exists in
 the sandbox.
@@ -138,10 +146,10 @@ into every sandbox, and that is what both a plain `ssh` session and VS Code's te
 ### kit/nvim/
 
 Neovim, from its release tarball (kept whole under `/opt/nvim`, linked from `/usr/local/bin`),
-pinned by `ARG NVIM_VERSION` and bumped by Renovate, and `conf.d/nvim.fish`, which sets `EDITOR`
-and `VISUAL` and aliases `vim`. git follows them: the git kit sets no `core.editor`, which would
-otherwise take precedence. No nvim configuration ships with it. Outside fish -- Claude Code's Bash
-tool -- `EDITOR` stays unset, which is fine for an agent that never opens an editor.
+at the `version` arg, and `conf.d/nvim.fish`, which sets `EDITOR` and `VISUAL` and aliases
+`vim`. git follows them: the git kit sets no `core.editor`, which would otherwise take
+precedence. No nvim configuration ships with it. Outside fish -- Claude Code's Bash tool --
+`EDITOR` stays unset, which is fine for an agent that never opens an editor.
 
 Not Docker's `docker.io/docker/sbx-kit-neovim`: it sets `EDITOR` only in `/etc/profile.d`, which
 fish never reads, and ships a starter `~/.config/nvim/init.lua` that a real nvim config would

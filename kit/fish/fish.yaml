@@ -10,6 +10,18 @@ displayName: fish
 description: "fish as the login shell and VS Code terminal"
 sourceUrl: https://github.com/tmsick/sbx-preset
 
+# The fish release, declared once: handed to fish.dockerfile as FISH_VERSION
+# and expanded into `provides`, so the kit can't claim a version it doesn't
+# ship. Bumped by Renovate.
+args:
+  version:
+    default: "4.9.3"
+    pattern: '^[0-9]+\.[0-9]+\.[0-9]+$'
+    description: fish release to install
+    buildArg: FISH_VERSION
+
+provides: ["fish@${{ kit.args.version }}"]
+
 capabilities:
   - type: com.docker.sandbox/lifecycle@1
     config:

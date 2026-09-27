@@ -8,8 +8,10 @@ USER root
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ARG TARGETARCH
-# Pinned so a rebuild doesn't silently pick up a new release.
-ARG FISH_VERSION=4.9.3
+# Supplied by the frontend from fish.yaml's `version` arg -- the one place the
+# release is pinned. No default here, so a build outside the frontend fails
+# rather than guessing.
+ARG FISH_VERSION
 
 # 4.x's static build embeds its functions and completions. xz-utils unpacks
 # the tarball.

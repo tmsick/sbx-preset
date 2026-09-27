@@ -5,11 +5,13 @@
 #
 #   make build                                 # every kit under kit/
 #   make build-mise                            # one kit
-#   MISE_VERSION=v2026.8.1 make build-mise     # override the pin in mise.dockerfile
+#   KIT_VERSION=2026.8.1 make build-mise       # override the kit's `version` arg
 #
 # Variables are read from the environment or the command line (both forms
-# work). Local tag: $(IMAGE)/<kit>:$(TAG). MISE_VERSION has no default here,
-# so the Dockerfile's pin stays authoritative.
+# work). Local tag: $(IMAGE)/<kit>:$(TAG). KIT_VERSION has no default here, so
+# each descriptor's pin stays authoritative; it reaches the kits that declare
+# a `version` arg (mise, fish, nvim) and is ignored by the rest. Not plain
+# VERSION: that name is common enough in environments to leak in unasked.
 
 IMAGE ?= sbx-preset/kit
 TAG ?= latest
@@ -20,5 +22,5 @@ build: $(KITS:%=build-%)
 
 $(KITS:%=build-%): build-%:
 	docker buildx build --load \
-		$(if $(MISE_VERSION),--build-arg MISE_VERSION=$(MISE_VERSION)) \
+		$(if $(KIT_VERSION),--build-arg version=$(KIT_VERSION)) \
 		-f kit/$*/$*.yaml -t $(IMAGE)/$*:$(TAG) kit/$*/
