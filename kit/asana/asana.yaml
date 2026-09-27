@@ -1,15 +1,20 @@
+# syntax=docker/sandbox-kit:3
+#
 # Attached only when a project needs it:
 # `--kit ghcr.io/tmsick/sbx-preset/kit/asana:latest`. Network allowlist
 # conventions -- including why an entry follows a recorded refusal rather than
 # a guess -- are in the README (## kit/). This starts at the domain the
 # service is obviously reached on; grow it from `sbx policy log` if that isn't
 # enough.
-schemaVersion: "2"
+#
+# Declaration-only: no content, just the runtime egress it grants.
+schemaVersion: "3"
 kind: mixin
-name: net-asana
 displayName: Asana network access
 description: "Allows Asana, for sandboxes that need it"
-permissions:
-  network:
-    allow:
-      - "**.asana.com:443"
+capabilities:
+  - type: com.docker.sandbox/network-policy@1
+    config:
+      runtime:
+        allow:
+          - "**.asana.com:443"

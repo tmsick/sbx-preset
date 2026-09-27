@@ -1,0 +1,30 @@
+# syntax=docker/sandbox-kit:3
+#
+# Neovim, and its integration into fish (conf.d/nvim.fish: EDITOR, VISUAL,
+# `vim`). A tool's shell integration belongs to the kit that installs the
+# tool, so the fish kit needs no knowledge of nvim. The overlay is all there
+# is: no hooks, no network.
+#
+# Not Docker's docker.io/docker/sbx-kit-neovim: it sets EDITOR only in
+# /etc/profile.d, which fish never reads, and ships a starter
+# ~/.config/nvim/init.lua that a real nvim config would collide with.
+schemaVersion: "3"
+kind: mixin
+displayName: Neovim
+description: "Neovim, as EDITOR in fish"
+sourceUrl: https://github.com/tmsick/sbx-preset
+
+# The Neovim release, declared once: handed to nvim.dockerfile as NVIM_VERSION
+# and expanded into `provides`, so the kit can't claim a version it doesn't
+# ship. Bumped by Renovate.
+args:
+  version:
+    default: "0.12.5"
+    pattern: '^[0-9]+\.[0-9]+\.[0-9]+$'
+    description: Neovim release to install
+    buildArg: NVIM_VERSION
+
+provides: ["nvim@${{ kit.args.version }}"]
+# conf.d/nvim.fish takes effect when a fish kit is composed alongside, and is
+# inert otherwise.
+integrates: ["fish"]

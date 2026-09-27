@@ -17,58 +17,49 @@ permissions:
   packages: write
 
 jobs:
-  validate:
+  build:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         kit:
-          - kit/claude
-          - kit/git
-          - kit/context7
-          - kit/asana
-          - kit/atlassian
-          - kit/figma
-          - kit/playwright
+          - mise
+          - fish
+          - nvim
+          - claude-config
+          - git
+          - context7
+          - asana
+          - atlassian
+          - figma
+          - playwright
     steps:
       - uses: actions/checkout@v7
 
-      - run: |
-          curl -fsSL https://get.docker.com | sudo REPO_ONLY=1 sh
-          sudo apt-get install -y docker-sbx
+      - uses: docker/setup-qemu-action@v4
 
-      - run: sbx kit validate "${{ matrix.kit }}"
+      - uses: docker/setup-buildx-action@v4
 
-  push:
-    if: github.event_name != 'pull_request'
-    needs: validate
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        kit:
-          - kit/claude
-          - kit/git
-          - kit/context7
-          - kit/asana
-          - kit/atlassian
-          - kit/figma
-          - kit/playwright
-    steps:
-      - uses: actions/checkout@v7
-
-      - run: |
-          curl -fsSL https://get.docker.com | sudo REPO_ONLY=1 sh
-          sudo apt-get install -y docker-sbx
-
+      # Skipped on pull_request: push is false there, and a forked PR's
+      # GITHUB_TOKEN has no packages:write to log in with anyway.
       - uses: docker/login-action@v4
+        if: github.event_name != 'pull_request'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - run: |
-          set -euo pipefail
-          ref="ghcr.io/tmsick/sbx-preset/${{ matrix.kit }}"
-          sbx kit push "${{ matrix.kit }}" "$ref:latest"
-          sbx kit push "${{ matrix.kit }}" "$ref:${{ github.sha }}"
+      # The descriptor's `# syntax=docker/sandbox-kit:3` line selects the kit
+      # frontend, which validates the descriptor as part of the build -- so a
+      # pull request build is the validation step.
+      - uses: docker/build-push-action@v7
+        with:
+          context: kit/${{ matrix.kit }}/
+          file: kit/${{ matrix.kit }}/${{ matrix.kit }}.yaml
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ghcr.io/tmsick/sbx-preset/kit/${{ matrix.kit }}:latest
+            ghcr.io/tmsick/sbx-preset/kit/${{ matrix.kit }}:${{ github.sha }}
+          cache-from: type=gha,scope=kit-${{ matrix.kit }}
+          cache-to: type=gha,mode=max,scope=kit-${{ matrix.kit }}
