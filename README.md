@@ -12,35 +12,41 @@ For your own project, no clone of this repository needed:
 ```sh
 sbx settings set kit.allowedSources '["docker.io/","ghcr.io/tmsick/"]'  # once
 
-cd /path/to/project
-sbx run --name "claude-$(basename "$PWD")" \
+cd /path/to/project   # a git repository
+sbx create --clone \
   docker.io/docker/sbx-kit-claude:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/mise:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/fish:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/nvim:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/claude-config:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/git:latest \
-  --kit ghcr.io/tmsick/sbx-preset/kit/context7:latest
+  --kit ghcr.io/tmsick/sbx-preset/kit/context7:latest \
+  .
 ```
 
-`sbx run` mounts the current directory, creates the sandbox if none by that name exists, and
-attaches to it. Once it exists, `sbx run --name "claude-$(basename "$PWD")"` alone gets you back
-in; with `--kit`, sbx refuses an existing sandbox rather than reusing it.
+`--clone` gives the agent its own clone of the repository inside the sandbox, at the same path,
+instead of bind-mounting the working tree, which is too slow to work in. The host repository gets
+a `sandbox-<name>` remote to fetch the agent's branches from (`git fetch sandbox-<name>`) while
+the sandbox is running; the host's own remotes are copied into the clone, so the agent can also
+push to them directly. `--clone` is fixed at creation.
 
-Run the first `sbx run` from an interactive terminal: sbx asks once to approve the workload's use
-of your Anthropic credential and records it in `~/.config/sbx/credentials.yaml`. Without that
+The sandbox is named `sbx-kit-claude-<directory>` by default (see `sbx ls`); pass `--name` to
+choose another.
+
+Run the first `sbx create` from an interactive terminal: sbx asks once to approve the workload's
+use of your Anthropic credential and records it in `~/.config/sbx/credentials.yaml`. Without that
 approval (`< /dev/null`, CI) the sandbox is created with the credential withheld.
 
 Add `--kit ghcr.io/tmsick/sbx-preset/kit/<service>:latest` for a project that needs one (see
 [the other kits](#the-other-kits)). Kits are fixed at creation: v3 sandboxes don't support `sbx
-kit add`, so changing a sandbox's kits means removing it (`sbx rm`) and running this again. Inside
+kit add`, so changing a sandbox's kits means removing it (`sbx rm`) and creating it again. Inside
 a sandbox, `ls /usr/share/sandbox/kit/` lists the kits it was built from.
 
-To use VS Code (and its Claude Code extension) inside the sandbox, connect over SSH:
+Work in the sandbox from VS Code (and its Claude Code extension) over SSH:
 
 ```sh
 sbx setup ssh   # once, and again if a new sandbox's host isn't found
-code --remote "ssh-remote+claude-$(basename "$PWD").sbx" "$PWD"
+code --remote "ssh-remote+sbx-kit-claude-$(basename "$PWD").sbx" "$PWD"
 ```
 
 To work on this repository itself, clone it. A kit directory can be passed to sbx as is -- sbx
