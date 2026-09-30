@@ -120,10 +120,6 @@ toolchain and sets its environment variables (`[env]`) there, which is why there
 here. `mise.dockerfile` stages:
 
 - `/usr/local/bin/mise`, from its official installer, at the `version` arg.
-- `libatomic.so.1`, lifted from the apt package of the Ubuntu base Docker's agent workloads are
-  built from (`docker/sandbox-templates:shell-docker`, their `com.docker.sandboxes.base` label):
-  pnpm's standalone binary (and other Node.js SEA builds) needs it once mise installs one, and
-  the base lacks it.
 - fish's `conf.d/mise.fish` (`mise activate fish`) and `completions/mise.fish`.
 
 `mise.yaml`'s install hook prepends mise's shims to PATH in `/etc/sandbox-persistent.sh`. The
