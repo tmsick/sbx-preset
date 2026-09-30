@@ -4,9 +4,7 @@
 # (README's ## kit/ has the overlay rules this follows). No tools are baked
 # in: install them in the sandbox as a project needs them.
 #
-# The build stage uses the same Ubuntu base Docker's agent workloads build on
-# (sbx-kit-claude's com.docker.sandboxes.base label), so the libatomic lifted
-# below matches the glibc it will run against.
+# The build stage is only a place to run curl and mise.
 FROM docker/sandbox-templates:shell-docker AS build
 
 USER root
@@ -16,16 +14,6 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # release is pinned -- without the `v` the installer expects. No default here,
 # so a build outside the frontend fails rather than guessing.
 ARG MISE_VERSION
-
-# libatomic1: needed at runtime by pnpm's standalone binary (and other Node.js
-# SEA builds) once mise installs one, and missing on the Ubuntu base
-# (https://github.com/pnpm/pnpm/issues/11531). Installed here only to lift its
-# shared object out.
-RUN apt-get update -y \
-    && apt-get install -y --no-install-recommends libatomic1 \
-    && rm -rf /var/lib/apt/lists/* \
-    && mkdir -p /out \
-    && cp -a --parents $(dpkg -L libatomic1 | grep '/libatomic\.so') /out/
 
 # Official installer, into a shared path (its default ~/.local/bin would land
 # in /root). It reads the release from MISE_VERSION, `v`-prefixed.
