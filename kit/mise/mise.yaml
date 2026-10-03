@@ -21,7 +21,7 @@ sourceUrl: https://github.com/tmsick/sbx-preset
 # adds it for the installer. Bumped by Renovate.
 args:
   version:
-    default: "2026.9.17"
+    default: "2026.10.0"
     pattern: '^[0-9]+\.[0-9]+\.[0-9]+$'
     description: mise release to install
     buildArg: MISE_VERSION
