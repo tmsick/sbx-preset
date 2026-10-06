@@ -1,17 +1,12 @@
-# syntax=docker/sandbox-kit:3
-#
 # Attached by default (see Usage) -- context7 is used routinely enough by this
 # setup's Claude Code config to warrant network reach on every sandbox.
 # Network allowlist conventions are in the README (## kit/).
-#
-# Declaration-only: no content, just the runtime egress it grants.
-schemaVersion: "3"
+schemaVersion: "2"
 kind: mixin
+name: net-context7
 displayName: context7 network access
 description: "Allows context7, for library/API documentation lookups"
-capabilities:
-  - type: com.docker.sandbox/network-policy@1
-    config:
-      runtime:
-        allow:
-          - "**.context7.com:443"
+permissions:
+  network:
+    allow:
+      - "**.context7.com:443"

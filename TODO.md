@@ -1,7 +1,7 @@
 # TODO
 
-- `kit/fish/config/fish/config.fish` mixes personal preferences (`BAT_THEME`, aliases
-  for bat/git/docker/less) into what README documents as the fish kit's shell setup.
+- `template/config/fish/config.fish` mixes personal preferences (`BAT_THEME`, aliases
+  for bat/git/docker/less) into what README documents as template-level shell setup.
   Only `XDG_CONFIG_HOME` and the `fish_add_path` calls are
   actually required; split the rest into a kit, as `kit/claude-config/` does.
 
@@ -10,10 +10,11 @@
   there rather than traffic worth allowing -- confirm before allowlisting it by
   reflex.
 
-- Kits are Early Access and their schema has moved before without a version bump to signal
-  it: sbx v0.38.0 renamed v2's `caps.network.*` to `permissions.network.*` and `commands.*` to
-  `setup.*`, both still under `schemaVersion: "2"`. `.github/workflows/kits.yml` builds every
-  kit through the `docker/sandbox-kit:3` frontend on each PR/push touching `kit/`, but only
-  reacts to changes in this repo -- a breaking frontend or sbx release with no accompanying kit
-  edit slips past it silently, so `make build` (and a local `sbx create` with the kit
-  directories) is still worth running by hand after upgrading sbx.
+- Kits are experimental and their schema moves without a version bump to signal
+  it: sbx v0.38.0 renamed `caps.network.*` to `permissions.network.*` and
+  `commands.*` to `setup.*`, both still under `schemaVersion: "2"`.
+  `.github/workflows/kits.yml` runs `sbx kit validate` on every PR/push
+  touching `kit/`, but only reacts to changes in this repo --
+  a schema-breaking sbx release with no accompanying kit edit slips past it
+  silently, so `make validate` is still worth running by hand after
+  upgrading sbx locally.
