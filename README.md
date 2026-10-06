@@ -1,9 +1,9 @@
 # sbx-preset
 
-A [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) template that adds
-[mise](https://mise.jdx.dev/), fish and Neovim to Docker's stock Claude Code image
-([template/](#template)), plus [kits](https://docs.docker.com/ai/sandboxes/customize/kits/) (v2)
-for configuration and per-service network access ([kit/](#kit)).
+[Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) [kits](https://docs.docker.com/ai/sandboxes/customize/kits/)
+(v2) for the built-in Claude Code agent: [mise](https://mise.jdx.dev/), fish and Neovim
+([kit/mise/](#kitmise), [kit/fish/](#kitfish), [kit/nvim/](#kitnvim)), plus configuration and
+per-service network access ([the other kits](#the-other-kits)).
 
 ## Usage
 
@@ -14,16 +14,14 @@ sbx settings set kit.allowedSources '["docker.io/","ghcr.io/tmsick/"]'  # once
 
 cd /path/to/project   # a git repository
 sbx create --clone \
-  -t ghcr.io/tmsick/sbx-preset/claude-code-docker:latest \
+  --kit ghcr.io/tmsick/sbx-preset/kit/mise:latest \
+  --kit ghcr.io/tmsick/sbx-preset/kit/fish:latest \
+  --kit ghcr.io/tmsick/sbx-preset/kit/nvim:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/claude-config:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/git:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/context7:latest \
   claude .
 ```
-
-`-t` swaps only the image: the built-in `claude` agent keeps its own configuration and launch
-command, which is why the template extends Docker's `claude-code-docker` image rather than
-replacing it.
 
 `--clone` gives the agent its own clone of the repository inside the sandbox, at the same path,
 instead of bind-mounting the working tree, which is too slow to work in. The host repository gets
@@ -35,8 +33,9 @@ The sandbox is named `claude-<directory>` by default (see `sbx ls`); pass `--nam
 another.
 
 Add `--kit ghcr.io/tmsick/sbx-preset/kit/<service>:latest` for a project that needs one (see
-[kit/](#kit)), at creation or later with `sbx kit add <sandbox> <reference>`, which recreates the
-sandbox's container.
+[the other kits](#the-other-kits)). A kit that only grants network access can also be added to an
+existing sandbox with `sbx kit add <sandbox> <reference>`, which recreates its container; one
+that ships files can't, so it means removing the sandbox (`sbx rm`) and creating it again.
 
 Work in the sandbox from VS Code (and its Claude Code extension) over SSH:
 
@@ -50,78 +49,37 @@ These are v2 kits on the built-in agent, not v3 kits on a v3 workload such as
 format was still changing in place under released sbx versions. The `v3-snapshot` tag holds this
 repository's last v3 state, the starting point for moving back.
 
+Everything this repository adds is a kit; the image stays Docker's own
+(`docker/sandbox-templates:claude-code-docker`), so its updates reach every new sandbox without a
+rebuild here.
+
 ## Development
 
-To work on this repository itself, clone it. Tasks are defined in `Makefile`:
+To work on this repository itself, clone it. A kit directory can be passed to sbx as is, so a
+change can be tried before CI publishes it (use absolute paths):
 
 ```sh
-make build                                 # docker build the template image
-BASE_VARIANT=shell-docker make build       # the agent-less variant used by `sbx create shell`
-MISE_VERSION=2026.8.1 make build           # override a pin in the Dockerfile
-make validate                              # sbx kit validate every kit
+sbx create --name kit-test --kit "$PWD/kit/mise" --kit "$PWD/kit/fish" claude /path/to/project
 ```
 
-Variables (read from the environment or the command line): `IMAGE`, `BASE_VARIANT`, `TAG`,
-`MISE_VERSION`, `FISH_VERSION`, `NVIM_VERSION`.
-
-sandboxd keeps its own image store, separate from the host Docker daemon's, so a `make build`
-image has to be loaded into it before a sandbox can use it. A kit directory can be passed to sbx
-as is (use absolute paths):
-
-```sh
-docker save sbx-preset/claude-code-docker:latest -o template.tar
-sbx template load template.tar
-sbx create --pull never -t docker.io/sbx-preset/claude-code-docker:latest \
-  --kit "$PWD/kit/git" claude /path/to/project
-sbx template rm docker.io/sbx-preset/claude-code-docker:latest   # when done
-```
-
-## template/
-
-`template/` is the Dockerfile's build context: `template/Dockerfile` plus `template/config/`, the
-paths it `COPY`s. It extends `docker/sandbox-templates:<BASE_VARIANT>` (`claude-code-docker` by
-default) with:
-
-- mise, from its official installer, with its shims first on `PATH` (an image `ENV`, so every
-  process gets them -- including the non-interactive bash Claude Code's Bash tool runs -- ahead
-  of the image's own `/usr/bin/node`, `python3`, ...). No tools are baked in: install them in the
-  sandbox as a project needs them (`mise install` against the project's own `mise.toml`, or `mise
-  use`); a project pins its toolchain and sets its environment variables (`[env]`) there.
-- fish, from upstream's static build (4.x embeds its functions and completions), as the `agent`
-  user's login shell.
-- Neovim, from its release tarball (kept whole under `/opt/nvim`, linked from `/usr/local/bin`).
-  No nvim configuration ships with it.
-- `libatomic1`, which pnpm's standalone binary (and other Node.js SEA builds) needs once mise
-  installs one, and which the Ubuntu base lacks.
-
-The three releases are pinned as `ARG`s in the Dockerfile and bumped by Renovate.
-
-`template/config/fish/` mirrors `~/.config/fish/`. `config.fish` sets defaults (locale, path,
-aliases) scoped to what actually exists in the sandbox; each tool's shell integration sits in a
-`conf.d/` file of its own: `mise.fish` (`mise activate fish`) and `nvim.fish` (`EDITOR`,
-`VISUAL`, `vim`). git follows `EDITOR`: the git kit sets no `core.editor`. Outside fish --
-Claude Code's Bash tool -- `EDITOR` stays unset, which is fine for an agent that never opens an
-editor.
-
-`template/config/vscode-server/data/Machine/settings.json` makes fish the default profile for VS
-Code's Remote-SSH terminal. Needed on top of the login shell: Docker Sandboxes forces
-`SHELL=/bin/bash` into every sandbox, and that is what both a plain `ssh` session and VS Code's
-terminal key off.
-
-A GitHub Actions workflow ([`.github/workflows/template.yml`](.github/workflows/template.yml))
-builds `claude-code-docker` and `shell-docker` for `linux/amd64` and `linux/arm64` on pull
-requests touching `template/`, and on push to `main` also publishes them to
-`ghcr.io/tmsick/sbx-preset/<variant>`, tagged `:latest` and `:<sha>`.
+`make validate` (or `make validate-<kit>`) runs `sbx kit validate` on every kit (or one) as a
+quicker check.
 
 ## kit/
 
 `kit/<name>/` directories are [v2 kits](https://docs.docker.com/ai/sandboxes/customize/kits/):
-declarative artifacts applied at sandbox creation (`--kit`) or to an existing sandbox (`sbx kit
-add`), not baked into the image -- editing a kit takes effect on the next `sbx create`, with no
-image rebuild. Each kit is a `spec.yaml` plus, where it injects files, a `files/` tree
-(`files/home/` lands in `/home/agent/`).
+declarative artifacts applied at sandbox creation (`--kit`), not baked into an image -- editing a
+kit takes effect on the next `sbx create`, with no image rebuild. Each kit is a `spec.yaml` plus,
+where it ships files, a `files/` tree (`files/home/` lands in `/home/agent/`). Files land first,
+then `setup.install` commands run, as root unless a command says otherwise, in `--kit` order.
 
-Two things to know before running `sbx kit add` by hand:
+A GitHub Actions workflow ([`.github/workflows/kits.yml`](.github/workflows/kits.yml)) runs `sbx
+kit validate` against every kit on pull requests and on push to `main`, and on push to `main`
+also publishes each to `ghcr.io/tmsick/sbx-preset/kit/<name>`, tagged `:latest` and `:<sha>`.
+
+Two things to know before running `sbx kit add` by hand. It accepts only kits limited to
+`environment.variables`, `setup.install` and `permissions.network.allow` -- of the kits here,
+`context7`, `asana`, `atlassian` and `figma`; one with files or startup commands is refused.
 
 - **Give it an absolute path.** Adding a kit recreates the container, re-resolving the
   references the sandbox was created with; a relative one resolves against a different
@@ -134,11 +92,60 @@ Two things to know before running `sbx kit add` by hand:
   only injects files. Re-adding an attached kit is refused (`duplicate kit name`) -- the
   practical way to find out.
 
-`claude-config`, `git` and `context7` are what the Usage quickstart attaches by default --
-generic enough to want on every sandbox. `asana`, `atlassian` and `figma` are network access for
-one service each, worth adding only when a project actually talks to it. `playwright` is
-different again -- it installs a browser and registers an MCP server rather than just opening
-network access. There's no directory split between these groups: every kit is attached the same
+A tool's shell integration ships with the kit that installs the tool: the mise kit wires mise into
+fish (`conf.d/mise.fish`) and bash (`/etc/sandbox-persistent.sh`), the nvim kit makes nvim fish's
+`EDITOR` (`conf.d/nvim.fish`), and the fish kit knows about neither -- any of the three works
+without the others. Each pins its release once, as the kit's `version` arg (`${{ kit.args.version
+}}` in its commands), which is what Renovate bumps; `--kit-arg mise.version=2026.8.1` overrides
+it per sandbox. Their downloads come from GitHub releases and the Ubuntu mirrors, which `sbx
+policy init balanced` already allows, so they grant no network access: a v2 grant would stay open
+for the agent at runtime, not just during install.
+
+### kit/mise/
+
+mise and its shell integration -- no tools. Install them in the sandbox as a project needs them
+(`mise install` against the project's own `mise.toml`, or `mise use`); a project pins its
+toolchain and sets its environment variables (`[env]`) there, which is why there is no direnv
+here. Its install commands:
+
+- download the mise release binary from GitHub to `/usr/local/bin/mise` -- not through the
+  `mise.run` installer, which fetches from `mise.jdx.dev`, a domain `balanced` doesn't allow;
+- install `libatomic1`, which pnpm's standalone binary (and other Node.js SEA builds) needs once
+  mise installs one, and which the Ubuntu image lacks;
+- prepend mise's shims to `PATH` in `/etc/sandbox-persistent.sh`, so the image's `/usr/bin/node`,
+  `python3`, ... don't win. That file is `BASH_ENV` and `CLAUDE_ENV_FILE` on Docker's images, and
+  their `~/.bashrc` sources it: every bash, and every Claude Code Bash tool call, gets the shims
+  first. Interactive fish gets the same precedence from `mise activate` (`conf.d/mise.fish`);
+- generate fish's `completions/mise.fish` for the installed release.
+
+### kit/fish/
+
+fish, from upstream's static build (4.x embeds its functions and completions), as the `agent`
+user's login shell (`/etc/shells`, `usermod`). Its install command fetches `xz-utils` to unpack
+the tarball.
+
+`files/home/.config/fish/config.fish` sets defaults (locale, path, aliases) scoped to what actually
+exists in the sandbox.
+
+`files/home/.vscode-server/data/Machine/settings.json` makes fish the default profile for VS Code's
+Remote-SSH terminal. Needed on top of the login shell: Docker Sandboxes forces `SHELL=/bin/bash`
+into every sandbox, and that is what both a plain `ssh` session and VS Code's terminal key off.
+
+### kit/nvim/
+
+Neovim, from its release tarball (kept whole under `/opt/nvim`, linked from `/usr/local/bin`), and
+`conf.d/nvim.fish`, which sets `EDITOR` and `VISUAL` and aliases `vim`. git follows them: the git
+kit sets no `core.editor`, which would otherwise take precedence. No nvim configuration ships with
+it. Outside fish -- Claude Code's Bash tool -- `EDITOR` stays unset, which is fine for an agent
+that never opens an editor.
+
+### The other kits
+
+Besides the three tool kits, `claude-config`, `git` and `context7` are what the Usage quickstart
+attaches by default -- generic enough to want on every sandbox. `asana`, `atlassian` and `figma`
+are network access for one service each, worth adding only when a project actually talks to it.
+`playwright` is different again -- it installs a browser and registers an MCP server rather than
+just opening network access. There's no directory split between these groups: every kit is attached the same
 way, an explicit `--kit` flag, so which ones a project needs is a call made per `sbx create`, not
 encoded in the repository layout.
 
@@ -187,7 +194,3 @@ The kits:
   on the host. Its network allow list covers only Chromium's own binary download; which sites
   the agent is actually allowed to navigate to is left to the consuming project, via `sbx policy
   allow network` or another kit.
-
-A GitHub Actions workflow ([`.github/workflows/kits.yml`](.github/workflows/kits.yml)) runs `sbx
-kit validate` against every kit on pull requests and on push to `main`, and on push to `main`
-also publishes each to `ghcr.io/tmsick/sbx-preset/kit/<name>`, tagged `:latest` and `:<sha>`.

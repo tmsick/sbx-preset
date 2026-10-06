@@ -1,0 +1,73 @@
+# mise and its integration into every shell the sandbox runs: fish via
+# conf.d/mise.fish (in files/), bash and Claude Code's Bash tool via
+# /etc/sandbox-persistent.sh (below). A tool's shell integration belongs to
+# the kit that installs the tool, so no other kit here needs to know mise
+# exists. No tools are baked in; install them in the sandbox as a project
+# needs them.
+#
+# Downloads go to GitHub and the Ubuntu mirrors, both of which `sbx policy
+# init balanced` already allows.
+schemaVersion: "2"
+kind: mixin
+name: mise
+displayName: mise
+description: "mise, ahead of the image's own tools in every shell"
+sourceURL: https://github.com/tmsick/sbx-preset
+# The mise release, declared once. No leading `v`: the URL adds it. Bumped
+# by Renovate.
+args:
+  version:
+    default: "2026.10.3"
+    pattern: '^[0-9]+\.[0-9]+\.[0-9]+$'
+    description: mise release to install
+setup:
+  install:
+    # pnpm's standalone binary (and other Node.js SEA builds) needs
+    # libatomic once mise installs one, and the Ubuntu image lacks it
+    # (https://github.com/pnpm/pnpm/issues/11531).
+    - command: |
+        set -e
+        apt-get update -y
+        apt-get install -y --no-install-recommends libatomic1
+        rm -rf /var/lib/apt/lists/*
+      description: Install libatomic1 for Node.js SEA builds
+    # The release binary straight from GitHub, into a shared path. Not the
+    # mise.run installer: it downloads from mise.jdx.dev, which `balanced`
+    # doesn't allow, and a v2 network grant would stay open at runtime too.
+    - command: |
+        set -e
+        case "$(uname -m)" in
+          x86_64) arch=x64 ;;
+          aarch64) arch=arm64 ;;
+          *) echo "unsupported architecture: $(uname -m)" >&2; exit 1 ;;
+        esac
+        curl -fsSL "https://github.com/jdx/mise/releases/download/v${{ kit.args.version }}/mise-v${{ kit.args.version }}-linux-${arch}" -o /usr/local/bin/mise
+        chmod 0755 /usr/local/bin/mise
+        mise --version
+      description: Install mise
+    # The image's PATH puts its own /usr/bin/node, python3, ... ahead of
+    # anything mise installs. This file is BASH_ENV and CLAUDE_ENV_FILE on
+    # Docker's templates, and their ~/.bashrc sources it: so every bash, and
+    # every Claude Code Bash tool call, gets the shims first.
+    - command: |
+        set -e
+        f=/etc/sandbox-persistent.sh
+        [ -f "$f" ] || exit 0
+        grep -qF 'mise shims (sbx-preset mise kit)' "$f" && exit 0
+        cat >> "$f" <<'SH'
+        # mise shims (sbx-preset mise kit): ahead of the image's own tools.
+        case "$PATH" in
+          /home/agent/.local/share/mise/shims:*) ;;
+          *) export PATH="/home/agent/.local/share/mise/shims:$PATH" ;;
+        esac
+        SH
+      description: Put mise shims ahead of the image's tools in sandbox-persistent.sh
+    # `mise activate` (conf.d/mise.fish) wires up shims and env hooks but not
+    # shell completions -- fish autoloads those from completions/. Generated
+    # here so they track the installed release; inert without fish.
+    - command: |
+        set -e
+        mkdir -p /home/agent/.config/fish/completions
+        mise completion fish > /home/agent/.config/fish/completions/mise.fish
+      user: "1000"
+      description: Generate mise's fish completions

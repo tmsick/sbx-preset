@@ -1,0 +1,45 @@
+# fish as the agent user's login shell: config.fish (locale, path, aliases)
+# and a VS Code Remote-SSH terminal profile, both in files/. Other tools' fish
+# integration ships with the kit that installs the tool (e.g. the mise kit's
+# conf.d/mise.fish, the nvim kit's conf.d/nvim.fish), not here.
+#
+# Downloads go to GitHub and the Ubuntu mirrors, both of which `sbx policy
+# init balanced` already allows.
+schemaVersion: "2"
+kind: mixin
+name: fish
+displayName: fish
+description: "fish as the login shell and VS Code terminal"
+sourceURL: https://github.com/tmsick/sbx-preset
+# The fish release, declared once. Bumped by Renovate.
+args:
+  version:
+    default: "4.9.3"
+    pattern: '^[0-9]+\.[0-9]+\.[0-9]+$'
+    description: fish release to install
+setup:
+  install:
+    # Upstream's static build: 4.x embeds its functions and completions.
+    # xz-utils unpacks it; the Ubuntu image lacks it.
+    - command: |
+        set -e
+        apt-get update -y
+        apt-get install -y --no-install-recommends xz-utils
+        rm -rf /var/lib/apt/lists/*
+        case "$(uname -m)" in
+          x86_64|aarch64) arch="$(uname -m)" ;;
+          *) echo "unsupported architecture: $(uname -m)" >&2; exit 1 ;;
+        esac
+        curl -fsSL "https://github.com/fish-shell/fish-shell/releases/download/${{ kit.args.version }}/fish-${{ kit.args.version }}-linux-${arch}.tar.xz" -o /tmp/fish.tar.xz
+        tar -xJf /tmp/fish.tar.xz -C /usr/local/bin fish
+        rm -f /tmp/fish.tar.xz
+        chmod 0755 /usr/local/bin/fish
+        /usr/local/bin/fish --version
+      description: Install fish
+    # usermod, not chsh -- no tty here. Docker Sandboxes still forces
+    # SHELL=/bin/bash into every sandbox, hence the VS Code profile in files/.
+    - command: |
+        set -e
+        grep -qx /usr/local/bin/fish /etc/shells || echo /usr/local/bin/fish >> /etc/shells
+        usermod --shell /usr/local/bin/fish agent
+      description: Make fish the agent user's login shell
