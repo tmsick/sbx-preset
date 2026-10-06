@@ -3,9 +3,9 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Bump the pinned mise version installed by the mise kit",
-      "managerFilePatterns": ["/^kit\\/mise\\/mise\\.yaml$/"],
-      "matchStrings": ["default: \"(?<currentValue>\\d+\\.\\d+\\.\\d+)\""],
+      "description": "Bump the pinned mise version installed by the template",
+      "managerFilePatterns": ["/^template\\/Dockerfile$/"],
+      "matchStrings": ["ARG MISE_VERSION=(?<currentValue>\\d+\\.\\d+\\.\\d+)\\s"],
       "depNameTemplate": "jdx/mise",
       "packageNameTemplate": "jdx/mise",
       "datasourceTemplate": "github-releases",
@@ -14,9 +14,9 @@
     },
     {
       "customType": "regex",
-      "description": "Bump the pinned fish version installed by the fish kit",
-      "managerFilePatterns": ["/^kit\\/fish\\/fish\\.yaml$/"],
-      "matchStrings": ["default: \"(?<currentValue>\\d+\\.\\d+\\.\\d+)\""],
+      "description": "Bump the pinned fish version installed by the template",
+      "managerFilePatterns": ["/^template\\/Dockerfile$/"],
+      "matchStrings": ["ARG FISH_VERSION=(?<currentValue>\\d+\\.\\d+\\.\\d+)\\s"],
       "depNameTemplate": "fish-shell/fish-shell",
       "packageNameTemplate": "fish-shell/fish-shell",
       "datasourceTemplate": "github-releases",
@@ -24,9 +24,9 @@
     },
     {
       "customType": "regex",
-      "description": "Bump the pinned Neovim version installed by the nvim kit",
-      "managerFilePatterns": ["/^kit\\/nvim\\/nvim\\.yaml$/"],
-      "matchStrings": ["default: \"(?<currentValue>\\d+\\.\\d+\\.\\d+)\""],
+      "description": "Bump the pinned Neovim version installed by the template",
+      "managerFilePatterns": ["/^template\\/Dockerfile$/"],
+      "matchStrings": ["ARG NVIM_VERSION=(?<currentValue>\\d+\\.\\d+\\.\\d+)\\s"],
       "depNameTemplate": "neovim/neovim",
       "packageNameTemplate": "neovim/neovim",
       "datasourceTemplate": "github-releases",
