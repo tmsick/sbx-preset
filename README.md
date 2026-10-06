@@ -188,9 +188,9 @@ The kits:
   routinely enough by this setup's Claude Code config to warrant it on every sandbox.
 - `kit/asana/`, `kit/atlassian/` and `kit/figma/` each allow only the domains that one service
   needs.
-- `kit/playwright/` installs Chromium at creation and registers `@playwright/mcp` with Claude
-  Code at every sandbox start, so browser automation runs as a subprocess of `claude` itself,
-  inside the sandbox -- unlike `sbx mcp add --command`, whose local stdio servers run unsandboxed
-  on the host. Its network allow list covers only Chromium's own binary download; which sites
-  the agent is actually allowed to navigate to is left to the consuming project, via `sbx policy
-  allow network` or another kit.
+- `kit/playwright/` installs Chromium at creation and registers `@playwright/mcp` with Claude Code
+  at every sandbox start, so browser automation runs as a subprocess of `claude` itself, inside
+  the sandbox -- unlike `sbx mcp add --command`, whose local stdio servers run unsandboxed on the
+  host. Its network allow list covers only Chromium's own binary download; which sites the agent
+  is actually allowed to navigate to is left to the consuming project, via
+  `sbx policy allow network` or another kit.
