@@ -23,6 +23,9 @@ jobs:
       fail-fast: false
       matrix:
         kit:
+          - kit/mise
+          - kit/fish
+          - kit/nvim
           - kit/claude-config
           - kit/git
           - kit/context7
@@ -47,6 +50,9 @@ jobs:
       fail-fast: false
       matrix:
         kit:
+          - kit/mise
+          - kit/fish
+          - kit/nvim
           - kit/claude-config
           - kit/git
           - kit/context7

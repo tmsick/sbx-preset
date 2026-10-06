@@ -1,0 +1,38 @@
+# Neovim, and its integration into fish (conf.d/nvim.fish in files/: EDITOR,
+# VISUAL, `vim`). A tool's shell integration belongs to the kit that installs
+# the tool, so the fish kit needs no knowledge of nvim. No nvim configuration
+# ships with it.
+#
+# Downloads go to GitHub, which `sbx policy init balanced` already allows.
+schemaVersion: "2"
+kind: mixin
+name: nvim
+displayName: Neovim
+description: "Neovim, as EDITOR in fish"
+sourceURL: https://github.com/tmsick/sbx-preset
+# The Neovim release, declared once. No leading `v`: the URL adds it. Bumped
+# by Renovate.
+args:
+  version:
+    default: "0.12.5"
+    pattern: '^[0-9]+\.[0-9]+\.[0-9]+$'
+    description: Neovim release to install
+setup:
+  install:
+    # The tarball is self-contained (runtime files, parsers) and expects to
+    # stay together: kept whole under /opt/nvim, linked from /usr/local/bin.
+    - command: |
+        set -e
+        case "$(uname -m)" in
+          x86_64) arch=x86_64 ;;
+          aarch64) arch=arm64 ;;
+          *) echo "unsupported architecture: $(uname -m)" >&2; exit 1 ;;
+        esac
+        curl -fsSL "https://github.com/neovim/neovim/releases/download/v${{ kit.args.version }}/nvim-linux-${arch}.tar.gz" -o /tmp/nvim.tar.gz
+        rm -rf /opt/nvim
+        mkdir -p /opt/nvim
+        tar -xzf /tmp/nvim.tar.gz -C /opt/nvim --strip-components=1 --no-same-owner
+        rm -f /tmp/nvim.tar.gz
+        ln -sf /opt/nvim/bin/nvim /usr/local/bin/nvim
+        nvim --version | head -1
+      description: Install Neovim
