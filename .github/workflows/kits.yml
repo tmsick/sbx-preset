@@ -33,6 +33,7 @@ jobs:
           - kit/atlassian
           - kit/figma
           - kit/playwright
+          - kit/ca-trust
     steps:
       - uses: actions/checkout@v7
 
@@ -40,7 +41,20 @@ jobs:
           curl -fsSL https://get.docker.com | sudo REPO_ONLY=1 sh
           sudo apt-get install -y docker-sbx
 
-      - run: sbx kit validate "${{ matrix.kit }}"
+      # kit/ca-trust declares a required arg (the CA cert) that isn't
+      # shipped with the kit -- validate needs a value for it, so a
+      # throwaway self-signed cert stands in here. It's never used beyond
+      # this check.
+      - run: |
+          set -euo pipefail
+          args=()
+          if [ "${{ matrix.kit }}" = "kit/ca-trust" ]; then
+            openssl req -x509 -newkey rsa:2048 -days 1 -nodes \
+              -keyout /tmp/ci-ca-key.pem -out /tmp/ci-ca.pem \
+              -subj "/CN=CI placeholder CA" 2>/dev/null
+            args+=(--kit-arg "cert_base64=$(base64 < /tmp/ci-ca.pem | tr -d '\n')")
+          fi
+          sbx kit validate "${{ matrix.kit }}" "${args[@]}"
 
   push:
     if: github.event_name != 'pull_request'
@@ -60,6 +74,7 @@ jobs:
           - kit/atlassian
           - kit/figma
           - kit/playwright
+          - kit/ca-trust
     steps:
       - uses: actions/checkout@v7
 
