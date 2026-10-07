@@ -1,0 +1,47 @@
+# Trusts a CA certificate supplied at `sbx create` time, not one shipped with
+# this kit -- there's nothing in this directory identifying whose CA it is.
+# The motivating case is a corporate TLS-inspecting proxy, or any other
+# MDM-pushed root: the host OS already trusts its CA, but
+# the sandbox is a separate Linux environment with its own trust store, so
+# every HTTPS connection inside it -- including the mise, fish and nvim kits'
+# own downloads -- fails certificate verification until that same CA is
+# trusted there too.
+#
+# List this kit FIRST on `sbx create --kit ...`: setup.install runs in --kit
+# order (see README), and the CA has to land before any other kit's install
+# commands try to reach the network.
+#
+# cert_base64 is the CA certificate, PEM-encoded and base64'd with no line
+# wraps -- e.g. from a file: `base64 < ca.pem | tr -d '\n'`. Works the same
+# on macOS (BSD base64) and Linux (GNU coreutils); BSD base64 doesn't even
+# accept a filename argument, only stdin or -i, and the two differ on
+# default line-wrapping besides -- tr strips it and the redirect sidesteps
+# the rest. See README for pulling one straight from the macOS keychain.
+schemaVersion: "2"
+kind: mixin
+name: ca-trust
+displayName: Custom CA trust
+description: "Trusts a CA certificate passed in at creation, for sandboxes behind a TLS-inspecting proxy"
+sourceURL: https://github.com/tmsick/sbx-preset
+args:
+  cert_base64:
+    required: true
+    pattern: "^[A-Za-z0-9+/=]+$"
+    description: PEM certificate to trust, base64-encoded with no line wraps
+  name:
+    default: "custom-ca"
+    pattern: "^[a-zA-Z0-9_-]+$"
+    description: filename (without .crt) to install the certificate as
+setup:
+  install:
+    # /usr/local/share/ca-certificates/ is update-ca-certificates' own input
+    # directory (hardcoded in /usr/sbin/update-ca-certificates as
+    # LOCALCERTSDIR) -- appending straight to the generated
+    # /etc/ssl/certs/ca-certificates.crt instead would get silently
+    # overwritten the next time anything on the system re-runs it.
+    - command: |
+        set -e
+        echo "${{ kit.args.cert_base64 }}" | base64 -d > "/usr/local/share/ca-certificates/${{ kit.args.name }}.crt"
+        openssl x509 -in "/usr/local/share/ca-certificates/${{ kit.args.name }}.crt" -noout -subject
+        update-ca-certificates
+      description: Trust the provided CA certificate

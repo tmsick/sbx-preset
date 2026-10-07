@@ -37,6 +37,12 @@ Add `--kit ghcr.io/tmsick/sbx-preset/kit/<service>:latest` for a project that ne
 existing sandbox with `sbx kit add <sandbox> <reference>`, which recreates its container; one
 that ships files can't, so it means removing the sandbox (`sbx rm`) and creating it again.
 
+On a network behind a corporate TLS-inspecting proxy, put
+`--kit ghcr.io/tmsick/sbx-preset/kit/ca-trust:latest --kit-arg cert_base64=<...>` FIRST in the
+`--kit` list -- before this one its CA isn't trusted yet, every other kit's `setup.install` that
+reaches the network (mise, fish, nvim) fails certificate verification and `sbx create` doesn't
+come up at all. See [`kit/ca-trust/`](#the-other-kits) for how to get that value.
+
 Work in the sandbox from VS Code (and its Claude Code extension) over SSH:
 
 ```sh
@@ -194,3 +200,14 @@ The kits:
   host. Its network allow list covers only Chromium's own binary download; which sites the agent
   is actually allowed to navigate to is left to the consuming project, via
   `sbx policy allow network` or another kit.
+- `kit/ca-trust/` trusts a CA certificate passed in at creation (`--kit-arg
+  ca-trust.cert_base64=<...>`), not one this repository ships or knows about. The motivating case
+  is a corporate TLS-inspecting proxy: the host OS already trusts its CA, but the sandbox is a
+  separate Linux environment with its own trust store, so every kit whose `setup.install` reaches
+  the network (mise, fish, nvim) fails certificate verification on a machine routed through one --
+  until that same CA is trusted there too. It has to go first: list it before the others on
+  `--kit`, since `setup.install` runs in `--kit` order and the CA has to land before anything else
+  tries the network. The value is the certificate, PEM-encoded and base64'd with no line wraps:
+  `base64 < ca.pem | tr -d '\n'` from a file, or pulled straight from the macOS keychain --
+  `security find-certificate -a -c <name> -p /Library/Keychains/System.keychain | base64 | tr -d
+  '\n'`, `<name>` being whatever the proxy's CA is listed under in Keychain Access.
