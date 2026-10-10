@@ -17,7 +17,7 @@ sourceURL: https://github.com/tmsick/sbx-preset
 # by Renovate.
 args:
   version:
-    default: "2026.10.4"
+    default: "2026.10.7"
     pattern: '^[0-9]+\.[0-9]+\.[0-9]+$'
     description: mise release to install
 setup:
