@@ -45,6 +45,10 @@ jobs:
       # shipped with the kit -- validate needs a value for it, so a
       # throwaway self-signed cert stands in here. It's never used beyond
       # this check.
+      #
+      # --offline: validate otherwise needs a signed-in Docker session (and
+      # sandboxd), which CI has neither of. It skips only the daemon-backed
+      # kit policy checks; the artifact checks still run.
       - run: |
           set -euo pipefail
           args=()
@@ -54,7 +58,7 @@ jobs:
               -subj "/CN=CI placeholder CA" 2>/dev/null
             args+=(--kit-arg "cert_base64=$(base64 < /tmp/ci-ca.pem | tr -d '\n')")
           fi
-          sbx kit validate "${{ matrix.kit }}" "${args[@]}"
+          sbx kit validate "${{ matrix.kit }}" --offline "${args[@]}"
 
   push:
     if: github.event_name != 'pull_request'
