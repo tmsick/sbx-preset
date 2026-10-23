@@ -1,7 +1,7 @@
-# fish as the agent user's login shell: config.fish (locale, path, aliases)
-# and a VS Code Remote-SSH terminal profile, both in files/. Other tools' fish
-# integration ships with the kit that installs the tool (e.g. the mise kit's
-# conf.d/mise.fish, the nvim kit's conf.d/nvim.fish), not here.
+# fish as the agent user's login shell, with config.fish (locale, path,
+# aliases) in files/. Other tools' fish integration ships with the kit that
+# installs the tool (e.g. the mise kit's conf.d/mise.fish, the nvim kit's
+# conf.d/nvim.fish), not here.
 #
 # Downloads go to GitHub and the Ubuntu mirrors, both of which `sbx policy
 # init balanced` already allows.
@@ -9,7 +9,7 @@ schemaVersion: "2"
 kind: mixin
 name: fish
 displayName: fish
-description: "fish as the login shell and VS Code terminal"
+description: "fish as the login shell"
 sourceURL: https://github.com/tmsick/sbx-preset
 # The fish release, declared once. Bumped by Renovate.
 args:
@@ -36,8 +36,7 @@ setup:
         chmod 0755 /usr/local/bin/fish
         /usr/local/bin/fish --version
       description: Install fish
-    # usermod, not chsh -- no tty here. Docker Sandboxes still forces
-    # SHELL=/bin/bash into every sandbox, hence the VS Code profile in files/.
+    # usermod, not chsh -- no tty here.
     - command: |
         set -e
         grep -qx /usr/local/bin/fish /etc/shells || echo /usr/local/bin/fish >> /etc/shells

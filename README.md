@@ -133,10 +133,6 @@ the tarball.
 `files/home/.config/fish/config.fish` sets defaults (locale, path, aliases) scoped to what actually
 exists in the sandbox.
 
-`files/home/.vscode-server/data/Machine/settings.json` makes fish the default profile for VS Code's
-Remote-SSH terminal. Needed on top of the login shell: Docker Sandboxes forces `SHELL=/bin/bash`
-into every sandbox, and that is what both a plain `ssh` session and VS Code's terminal key off.
-
 ### kit/nvim/
 
 Neovim, from its release tarball (kept whole under `/opt/nvim`, linked from `/usr/local/bin`), and
