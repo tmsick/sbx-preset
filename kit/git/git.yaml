@@ -6,13 +6,27 @@
 # XDG-style ignore file would just be shadowed and never read (README has the
 # full story).
 #
-# Identity (user.name/user.email) is sbx's own job (see README), so nothing
-# here is personal.
+# Identity (user.name/user.email) comes from the host through the
+# git-identity@1 capability below, so nothing here is personal. v3 passes it
+# only to a kit that asks, and the `claude` workload doesn't: without the
+# request, commits in the sandbox are authored as a made-up
+# agent@<sandbox>.docker.internal. sbx merges the pair into the global
+# ~/.gitconfig, the file this kit ships; repository-local config is left
+# alone. The pair is read from the workspace repo's effective config (local,
+# includeIf), falling back to the host's global, and is fixed at creation.
 schemaVersion: "3"
 kind: mixin
 displayName: git config
-description: "Injects ~/.gitconfig and ~/.gitignore_global"
+description: "Injects ~/.gitconfig and ~/.gitignore_global, and the host's git identity"
 sourceUrl: https://github.com/tmsick/sbx-preset
+
+capabilities:
+  - type: com.docker.sandbox/git-identity@1
+    # Optional: a host without a configured identity still gets a sandbox,
+    # silently without one. Required would refuse to create it.
+    optional: true
+    description: Commit as the host user
+
 # Staged rather than a bare `COPY --chown` onto scratch, which would hand the
 # implicitly created /home to uid 1000 too: a mixin's directory entries
 # replace the workload's, owner included.
