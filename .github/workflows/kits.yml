@@ -47,7 +47,7 @@ jobs:
           - figma
           - playwright
           - ca-trust
-          - ldconfig
+          - debian-fixups
     steps:
       - uses: actions/checkout@v7
 
@@ -89,7 +89,7 @@ jobs:
           - figma
           - playwright
           - ca-trust
-          - ldconfig
+          - debian-fixups
     steps:
       - uses: actions/checkout@v7
 

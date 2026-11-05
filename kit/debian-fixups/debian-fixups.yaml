@@ -1,0 +1,47 @@
+# syntax=docker/sandbox-kit:3
+#
+# Restores what Debian's maintainer scripts would have set up. Docker's
+# `claude` workload (Debian 13 Hardened Image) has none of its packages'
+# postinst steps applied: /var/lib/dpkg/info holds no .postinst, and no
+# alternative is registered. Whatever such a step creates is missing, which
+# tools then trip over on a terminal -- invisible to Claude Code's Bash tool,
+# which has no tty. One hook per gap, each with the symptom it cures:
+#
+# - ldconfig: no /etc/ld.so.cache, so `ldconfig -p` fails and VS Code Server's
+#   prerequisite check over SSH ("does not meet the prerequisites") refuses
+#   the sandbox.
+# - pager: no /usr/bin/pager, git's default pager, so `git log` on a tty fails
+#   with "unable to execute pager 'pager'". Registered as the less package's
+#   own postinst would. Registering the alternative fixes every `pager`
+#   consumer, where `core.pager` would fix only git and override $PAGER.
+#
+# Install hooks, not an overlay: the cache indexes the composed sandbox's own
+# libraries, and alternatives live in /etc and /var/lib/dpkg, which the
+# workload owns. The hooks run once when the sandbox is created, before the
+# agent starts.
+#
+# Add a hook when a gap is observed, not speculatively, and drop each one once
+# the workload ships its result.
+#
+# Declaration-only: no content, just install hooks.
+schemaVersion: "3"
+kind: mixin
+displayName: Debian fixups
+description: "Restores the linker cache and the pager alternative that the workload's missing Debian maintainer scripts would have set up"
+sourceUrl: https://github.com/tmsick/sbx-preset
+
+capabilities:
+  - type: com.docker.sandbox/lifecycle@1
+    config:
+      install:
+        - command: ldconfig
+          user: "0"
+          description: Build the dynamic linker cache
+        # Skipped without less rather than failing: a missing pager is no
+        # reason to refuse the sandbox. Priority 77 is what Debian's less uses.
+        - command: |
+            if [ -x /usr/bin/less ]; then
+              update-alternatives --install /usr/bin/pager pager /usr/bin/less 77
+            fi
+          user: "0"
+          description: Register less as the pager alternative
