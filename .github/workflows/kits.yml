@@ -14,77 +14,86 @@ on:
 
 permissions:
   contents: read
-  packages: write
+
+# Runs on one ref queue up instead of overlapping, and a queued run is replaced
+# by a newer one: a stale run can't finish after a newer one and move `:latest`
+# back.
+concurrency:
+  group: kits-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  validate:
+  # The descriptor's `# syntax=docker/sandbox-kit:3` line selects the kit
+  # frontend, which validates the descriptor as part of the build -- so this
+  # build is the validation step. (`sbx kit validate` can't stand in:
+  # `--offline` can't load a v3 source kit, and without it validate needs
+  # sandboxd.) Args without `buildArg:` -- kit/ca-trust's required CA
+  # certificate, kit/playwright's release -- resolve at sandbox creation, so
+  # the build needs no value for them.
+  build:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         kit:
-          - kit/mise
-          - kit/fish
-          - kit/nvim
-          - kit/claude-config
-          - kit/git
-          - kit/context7
-          - kit/asana
-          - kit/atlassian
-          - kit/figma
-          - kit/playwright
-          - kit/ca-trust
+          - mise
+          - fish
+          - nvim
+          - claude-config
+          - git
+          - context7
+          - asana
+          - atlassian
+          - figma
+          - playwright
+          - ca-trust
     steps:
       - uses: actions/checkout@v7
 
-      - run: |
-          curl -fsSL https://get.docker.com | sudo REPO_ONLY=1 sh
-          sudo apt-get install -y docker-sbx
+      - uses: docker/setup-qemu-action@v4
 
-      # kit/ca-trust declares a required arg (the CA cert) that isn't
-      # shipped with the kit -- validate needs a value for it, so a
-      # throwaway self-signed cert stands in here. It's never used beyond
-      # this check.
-      #
-      # --offline: validate otherwise needs a signed-in Docker session (and
-      # sandboxd), which CI has neither of. It skips only the daemon-backed
-      # kit policy checks; the artifact checks still run.
-      - run: |
-          set -euo pipefail
-          args=()
-          if [ "${{ matrix.kit }}" = "kit/ca-trust" ]; then
-            openssl req -x509 -newkey rsa:2048 -days 1 -nodes \
-              -keyout /tmp/ci-ca-key.pem -out /tmp/ci-ca.pem \
-              -subj "/CN=CI placeholder CA" 2>/dev/null
-            args+=(--kit-arg "cert_base64=$(base64 < /tmp/ci-ca.pem | tr -d '\n')")
-          fi
-          sbx kit validate "${{ matrix.kit }}" --offline "${args[@]}"
+      - uses: docker/setup-buildx-action@v4
 
-  push:
-    if: github.event_name != 'pull_request'
-    needs: validate
+      - uses: docker/build-push-action@v7
+        with:
+          context: kit/${{ matrix.kit }}/
+          file: kit/${{ matrix.kit }}/${{ matrix.kit }}.yaml
+          platforms: linux/amd64,linux/arm64
+          push: false
+          cache-from: type=gha,scope=kit-${{ matrix.kit }}
+          cache-to: type=gha,mode=max,scope=kit-${{ matrix.kit }}
+
+  # Only main publishes, whatever the trigger (workflow_dispatch included), and
+  # only this job holds packages:write. Same build again, served from the
+  # cache.
+  publish:
+    if: github.ref == 'refs/heads/main'
+    needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     strategy:
       fail-fast: false
       matrix:
         kit:
-          - kit/mise
-          - kit/fish
-          - kit/nvim
-          - kit/claude-config
-          - kit/git
-          - kit/context7
-          - kit/asana
-          - kit/atlassian
-          - kit/figma
-          - kit/playwright
-          - kit/ca-trust
+          - mise
+          - fish
+          - nvim
+          - claude-config
+          - git
+          - context7
+          - asana
+          - atlassian
+          - figma
+          - playwright
+          - ca-trust
     steps:
       - uses: actions/checkout@v7
 
-      - run: |
-          curl -fsSL https://get.docker.com | sudo REPO_ONLY=1 sh
-          sudo apt-get install -y docker-sbx
+      - uses: docker/setup-qemu-action@v4
+
+      - uses: docker/setup-buildx-action@v4
 
       - uses: docker/login-action@v4
         with:
@@ -92,8 +101,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - run: |
-          set -euo pipefail
-          ref="ghcr.io/tmsick/sbx-preset/${{ matrix.kit }}"
-          sbx kit push "${{ matrix.kit }}" "$ref:latest"
-          sbx kit push "${{ matrix.kit }}" "$ref:${{ github.sha }}"
+      # mode=min: Buildx's default provenance can leave the image index
+      # without the kit annotations (consumers fall back to the platform
+      # manifest, but an explicit mode keeps them predictable).
+      - uses: docker/build-push-action@v7
+        with:
+          context: kit/${{ matrix.kit }}/
+          file: kit/${{ matrix.kit }}/${{ matrix.kit }}.yaml
+          platforms: linux/amd64,linux/arm64
+          push: true
+          provenance: mode=min
+          tags: |
+            ghcr.io/tmsick/sbx-preset/kit/${{ matrix.kit }}:latest
+            ghcr.io/tmsick/sbx-preset/kit/${{ matrix.kit }}:${{ github.sha }}
+          cache-from: type=gha,scope=kit-${{ matrix.kit }}
+          cache-to: type=gha,mode=max,scope=kit-${{ matrix.kit }}

@@ -1,0 +1,110 @@
+# syntax=docker/sandbox-kit:3
+#
+# Attached only when a project needs browser automation:
+# `--kit ghcr.io/tmsick/sbx-preset/kit/playwright:latest`. Installs Chromium
+# and registers @playwright/mcp with Claude Code so it runs as a subprocess of
+# `claude` itself, inside the sandbox -- unlike `sbx mcp add --command`, whose
+# local stdio servers run unsandboxed on the HOST (see that command's own
+# --help). Keeping the browser inside the sandbox means it's already bound by
+# the sandbox's own network policy; there's no separate mechanism to wire up
+# for that.
+#
+# Not Docker's docker.io/docker/sbx-kit-playwright: that one ships the
+# playwright CLI and a browser tree but registers no MCP server.
+#
+# The workload ships no Node.js, so the first install hook adds nodejs and npm
+# from its apt sources. Hooks only, no overlay: apt packages (here and in
+# `install-deps`) need the workload's own dpkg database.
+#
+# @playwright/mcp is installed once, globally and as root, at the exact release
+# the `version` arg names, and run from there: nothing fetches or resolves a
+# version at sandbox start, and the agent can't rewrite what it runs. The
+# playwright it depends on is pinned by that release, so the OS dependencies
+# and the Chromium build both come from the same one.
+#
+# No network grant: what the hooks reach -- the Debian and dhi.io apt sources,
+# the npm registry, Chromium's cdn.playwright.dev -- `sbx policy init
+# balanced` already covers (see README's network allowlist conventions). Which
+# sites the agent is actually allowed to navigate to is the consuming
+# project's call, via `sbx policy allow network` or another kit -- same as any
+# other kit here.
+schemaVersion: "3"
+kind: mixin
+displayName: Playwright MCP
+description: "Installs Chromium and registers @playwright/mcp with Claude Code, so browser automation runs inside the sandbox"
+sourceUrl: https://github.com/tmsick/sbx-preset
+
+# The @playwright/mcp release, declared once; it resolves at sandbox creation
+# and expands into the install hook below. Bumped by Renovate.
+args:
+  version:
+    default: "0.0.84"
+    pattern: '^[0-9]+\.[0-9]+\.[0-9]+$'
+    description: "@playwright/mcp release to install"
+
+# The install hooks below fetch over HTTPS, so the CA kit's hook has to run
+# first when that kit is composed alongside; inert otherwise.
+integrates: ["ca-trust"]
+
+capabilities:
+  - type: com.docker.sandbox/lifecycle@1
+    config:
+      install:
+        # Hooks see only the variables they declare. These carry the sandbox's
+        # forced proxy and its CA to apt and npm downloads.
+        #
+        # apt-get needs root. The browser download further down runs as the
+        # agent user so the cache lands under its own home, where
+        # @playwright/mcp will actually look for it at startup.
+        - command: |
+            set -e
+            apt-get update -y
+            apt-get install -y --no-install-recommends nodejs npm
+          user: "0"
+          env: &net-env [HTTP_PROXY, HTTPS_PROXY, http_proxy, https_proxy, NO_PROXY, no_proxy, NODE_EXTRA_CA_CERTS, SSL_CERT_FILE, NODE_USE_ENV_PROXY]
+          description: "Install Node.js and npm"
+
+        # --ignore-scripts: nothing the dependency tree ships runs at install.
+        # A root hook's HOME is still /home/agent, and its cwd may be the
+        # workspace: npm would leave a root-owned ~/.npm that the agent's own
+        # npm then fails on (EACCES) and could read the project's .npmrc, so
+        # root works from a throwaway directory with a throwaway HOME.
+        - command: |
+            set -e
+            work=$(mktemp -d)
+            trap 'rm -rf "$work"' EXIT
+            cd "$work"
+            export HOME="$work"
+            npm install -g --ignore-scripts "@playwright/mcp@${{ kit.args.version }}"
+            node "$(npm root -g)/@playwright/mcp/node_modules/playwright/cli.js" install-deps chromium
+          user: "0"
+          env: *net-env
+          description: "Install @playwright/mcp and Chromium's OS-level dependencies"
+
+        - command: "playwright-mcp install-browser chromium"
+          user: "1000"
+          env: *net-env
+          description: "Download the exact Chromium build @playwright/mcp uses"
+      startup:
+        # `claude mcp get` exits non-zero when unregistered, so a restart
+        # doesn't re-add on top of an existing registration. It also doesn't
+        # pick up a changed command below -- remove the server by hand first
+        # for that. Registered at every start rather than once at install: the
+        # workload rewrites ~/.claude.json when it is created, which would
+        # drop an earlier registration. --no-sandbox: Chromium's own process
+        # sandbox needs privileges a container often doesn't grant; this is
+        # Microsoft's own default for containerized deployments of this same
+        # server.
+        #
+        # Hooks drop the image's PATH, so `claude` isn't found without
+        # exporting it again first.
+        - command:
+            - sh
+            - -c
+            - >-
+              export PATH="$HOME/.local/bin:$HOME/.claude/local:$PATH" &&
+              claude mcp get playwright >/dev/null 2>&1 ||
+              claude mcp add --scope user playwright --
+              playwright-mcp --browser chromium --headless --no-sandbox
+          user: "1000"
+          description: "Register @playwright/mcp with Claude Code if not already registered"

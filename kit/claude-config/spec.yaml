@@ -1,8 +1,0 @@
-# Injects Claude Code configuration (files/home/.claude/) at sandbox creation
-# (`--kit`) or via `sbx kit add`. CLAUDE.md stays either empty or generic
-# enough for everyone to see.
-schemaVersion: "2"
-kind: mixin
-name: claude-config
-displayName: Claude Code config
-description: "Injects CLAUDE.md (and rules/, if present) for Claude Code"
