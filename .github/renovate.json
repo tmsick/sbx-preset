@@ -42,6 +42,16 @@
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver",
       "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Bump the pinned prettier version used by make fmt",
+      "managerFilePatterns": ["/^Makefile$/"],
+      "matchStrings": ["PRETTIER_VERSION := (?<currentValue>\\d+\\.\\d+\\.\\d+)"],
+      "depNameTemplate": "prettier",
+      "packageNameTemplate": "prettier",
+      "datasourceTemplate": "npm",
+      "versioningTemplate": "semver"
     }
   ]
 }

@@ -4,6 +4,11 @@
 #
 #   make validate                              # every kit under kit/
 #   make validate-mise                         # one kit
+#   make fmt                                   # format the repo with prettier
+#   make fmt-check                             # fail if anything is unformatted
+#
+# fmt runs a pinned prettier through npx; without Node on the host:
+#   mise exec node -- make fmt
 #
 # A kit with a recipe is built to validate it, on the host's Docker (its
 # daemon has to be running). To build in sbx's own builder sandbox instead:
@@ -12,6 +17,15 @@
 #
 # No --offline: sbx can't load a v3 source kit without the daemon. CI
 # (.github/workflows/kits.yml) validates by building instead.
+
+PRETTIER_VERSION := 3.9.10
+PRETTIER ?= npx --yes prettier@$(PRETTIER_VERSION)
+
+.PHONY: fmt fmt-check
+fmt:
+	$(PRETTIER) --write .
+fmt-check:
+	$(PRETTIER) --check .
 
 KITS := $(notdir $(wildcard kit/*))
 

@@ -71,6 +71,10 @@ quicker check. A kit with a recipe is built to be validated, on the host's Docke
 has to be running -- or, with `SBX_KIT_BUILDER=sandbox`, in sbx's own builder sandbox (`sbx kit
 builder rm` reclaims its build cache).
 
+`make fmt` formats the repository with a pinned prettier, and `make fmt-check` (which CI runs) fails
+on anything unformatted. Both go through `npx`; without Node on the host, run
+`mise exec node -- make fmt`.
+
 ## kit/
 
 `kit/<name>/` directories are [v3 kits](https://docs.docker.com/ai/sandboxes/customize/author/):
