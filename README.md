@@ -20,6 +20,7 @@ sbx create --clone \
   --kit ghcr.io/tmsick/sbx-preset/kit/claude-config:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/git:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/context7:latest \
+  --kit ghcr.io/tmsick/sbx-preset/kit/ldconfig:latest \
   claude .
 ```
 
@@ -51,6 +52,9 @@ Work in the sandbox from VS Code (and its Claude Code extension) over SSH:
 sbx setup ssh   # once, and again if a new sandbox's host isn't found
 code --remote "ssh-remote+claude-$(basename "$PWD").sbx" "$PWD"
 ```
+
+VS Code over SSH needs [`kit/ldconfig/`](#the-other-kits): without it, VS Code Server refuses the
+sandbox.
 
 These are v3 kits on Docker's own `claude` agent. Built-in agent names resolve to published v3 kits
 (`docker.io/sbx/claude`, a Debian 13 Hardened Image), and v1/v2 kits can't be composed with v3
@@ -173,8 +177,9 @@ collide with.
 ### The other kits
 
 Besides the three tool kits, `claude-config`, `git` and `context7` are what the Usage quickstart
-attaches by default -- generic enough to want on every sandbox. `asana`, `atlassian` and `figma`
-are network access for one service each, worth adding only when a project actually talks to it.
+attaches by default -- generic enough to want on every sandbox -- and so is `ldconfig`, which VS Code
+over SSH needs. `asana`, `atlassian` and `figma` are network access for one service each, worth
+adding only when a project actually talks to it.
 `playwright` is different again -- it installs a browser and registers an MCP server rather than
 just opening network access. There's no directory split between these groups: every kit is attached the same
 way, an explicit `--kit` flag, so which ones a project needs is a call made per `sbx create`, not
@@ -219,6 +224,10 @@ The kits:
   github.com:443, and this preset's remotes are HTTPS-only (no SSH port 22).
 - `kit/context7/` allows `**.context7.com:443` -- library/API documentation lookups, used
   routinely enough by this setup's Claude Code config to warrant it on every sandbox.
+- `kit/ldconfig/` runs `ldconfig` in an install hook. Docker's `claude` workload (Debian 13
+  Hardened Image) ships no `/etc/ld.so.cache`, so `ldconfig -p` fails and VS Code Server's
+  prerequisite check over SSH ("does not meet the prerequisites") refuses the sandbox, whatever
+  other kits are attached. Drop the kit once the workload ships the cache.
 - `kit/asana/`, `kit/atlassian/` and `kit/figma/` each allow only the domains that one service
   needs.
 - `kit/playwright/` installs Node.js (the image ships none), `@playwright/mcp` at the `version`
