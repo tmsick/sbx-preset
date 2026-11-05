@@ -4,7 +4,7 @@
     {
       "customType": "regex",
       "description": "Bump the pinned mise version installed by the mise kit",
-      "managerFilePatterns": ["/^kit\\/mise\\/spec\\.yaml$/"],
+      "managerFilePatterns": ["/^kit\\/mise\\/mise\\.yaml$/"],
       "matchStrings": ["default: \"(?<currentValue>\\d+\\.\\d+\\.\\d+)\""],
       "depNameTemplate": "jdx/mise",
       "packageNameTemplate": "jdx/mise",
@@ -15,7 +15,7 @@
     {
       "customType": "regex",
       "description": "Bump the pinned fish version installed by the fish kit",
-      "managerFilePatterns": ["/^kit\\/fish\\/spec\\.yaml$/"],
+      "managerFilePatterns": ["/^kit\\/fish\\/fish\\.yaml$/"],
       "matchStrings": ["default: \"(?<currentValue>\\d+\\.\\d+\\.\\d+)\""],
       "depNameTemplate": "fish-shell/fish-shell",
       "packageNameTemplate": "fish-shell/fish-shell",
@@ -24,8 +24,18 @@
     },
     {
       "customType": "regex",
+      "description": "Bump the pinned @playwright/mcp release installed by the playwright kit",
+      "managerFilePatterns": ["/^kit\\/playwright\\/playwright\\.yaml$/"],
+      "matchStrings": ["default: \"(?<currentValue>\\d+\\.\\d+\\.\\d+)\""],
+      "depNameTemplate": "@playwright/mcp",
+      "packageNameTemplate": "@playwright/mcp",
+      "datasourceTemplate": "npm",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
       "description": "Bump the pinned Neovim version installed by the nvim kit",
-      "managerFilePatterns": ["/^kit\\/nvim\\/spec\\.yaml$/"],
+      "managerFilePatterns": ["/^kit\\/nvim\\/nvim\\.yaml$/"],
       "matchStrings": ["default: \"(?<currentValue>\\d+\\.\\d+\\.\\d+)\""],
       "depNameTemplate": "neovim/neovim",
       "packageNameTemplate": "neovim/neovim",
