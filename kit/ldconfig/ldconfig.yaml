@@ -1,0 +1,28 @@
+# syntax=docker/sandbox-kit:3
+#
+# Builds the dynamic linker cache, /etc/ld.so.cache. Docker's `claude`
+# workload (Debian 13 Hardened Image) ships without one, so `ldconfig -p`
+# fails, and VS Code Server's prerequisite check over SSH -- which finds
+# libstdc++ through `ldconfig -p` -- refuses the sandbox ("does not meet the
+# prerequisites"), whatever other kits are attached.
+#
+# An install hook, not an overlay: the cache indexes the composed sandbox's
+# own libraries, so it can't be baked into a kit's content. The hook runs once
+# when the sandbox is created, before the agent starts.
+#
+# Not needed once the workload ships the cache itself.
+#
+# Declaration-only: no content, just an install hook.
+schemaVersion: "3"
+kind: mixin
+displayName: ldconfig
+description: "Builds /etc/ld.so.cache, which VS Code Server's prerequisite check needs"
+sourceUrl: https://github.com/tmsick/sbx-preset
+
+capabilities:
+  - type: com.docker.sandbox/lifecycle@1
+    config:
+      install:
+        - command: ldconfig
+          user: "0"
+          description: Build the dynamic linker cache

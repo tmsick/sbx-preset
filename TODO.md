@@ -5,11 +5,9 @@
   Only `XDG_CONFIG_HOME` and the `fish_add_path` calls are
   actually required; split the rest into a kit, as `kit/claude-config/` does.
 
-- The `claude` workload (Debian 13 Hardened Image) ships no `/etc/ld.so.cache`, so `ldconfig -p`
-  fails and VS Code Server's prerequisite check over SSH ("does not meet the prerequisites")
-  refuses the sandbox, with any kit set. Waiting on Docker to fix the image. Fallback if it
-  doesn't: a `kit/ldconfig` whose root install hook runs `ldconfig` (an install hook persists,
-  unlike running it by hand) -- its own kit, not part of fish.
+- Remove `kit/ldconfig/` (and its README and `kits.yml` entries) once the `claude` workload ships
+  `/etc/ld.so.cache` itself; check with `sbx exec <sandbox> ls /etc/ld.so.cache` on a sandbox
+  created without the kit.
 
 - Kits are experimental and their grammar moves under released sbx: sbx v0.50.0 stopped composing
   v1/v2 kits with v3 ones, and v3 capabilities get superseded in place (`agent-context@1` by

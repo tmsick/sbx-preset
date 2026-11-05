@@ -47,6 +47,7 @@ jobs:
           - figma
           - playwright
           - ca-trust
+          - ldconfig
     steps:
       - uses: actions/checkout@v7
 
@@ -88,6 +89,7 @@ jobs:
           - figma
           - playwright
           - ca-trust
+          - ldconfig
     steps:
       - uses: actions/checkout@v7
 
