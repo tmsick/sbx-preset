@@ -53,8 +53,10 @@ sbx setup ssh   # once, and again if a new sandbox's host isn't found
 code --remote "ssh-remote+claude-$(basename "$PWD").sbx" "$PWD"
 ```
 
-VS Code over SSH needs [`kit/debian-fixups/`](#the-other-kits): without it, VS Code Server refuses
-the sandbox, and `git log` in its terminal fails.
+In VS Code's terminal, `git log` and other paged commands need
+[`kit/debian-fixups/`](#the-other-kits). VS Code Server itself needs no kit on a sandbox created
+since 2026-11-05, when the image began shipping the linker cache it checks for; recreate an older
+one.
 
 These are v3 kits on Docker's own `claude` agent. Built-in agent names resolve to published v3 kits
 (`docker.io/sbx/claude`, a Debian 13 Hardened Image), and v1/v2 kits can't be composed with v3
@@ -178,8 +180,8 @@ collide with.
 
 Besides the three tool kits, `claude-config`, `git` and `context7` are what the Usage quickstart
 attaches by default -- generic enough to want on every sandbox -- and so is `debian-fixups`, which
-VS Code over SSH needs. `asana`, `atlassian` and `figma` are network access for one service each,
-worth adding only when a project actually talks to it.
+paged commands in a terminal need. `asana`, `atlassian` and `figma` are network access for one
+service each, worth adding only when a project actually talks to it.
 `playwright` is different again -- it installs a browser and registers an MCP server rather than
 just opening network access. There's no directory split between these groups: every kit is attached the same
 way, an explicit `--kit` flag, so which ones a project needs is a call made per `sbx create`, not
@@ -227,11 +229,11 @@ The kits:
 - `kit/debian-fixups/` restores what Debian's maintainer scripts would have set up. Docker's
   `claude` workload (Debian 13 Hardened Image) has none of its packages' postinst steps applied, so
   what they create is missing, and tools trip over it on a terminal (not in Claude Code's Bash
-  tool, which has no tty). One install hook per gap: `ldconfig` builds `/etc/ld.so.cache`, without
-  which VS Code Server's prerequisite check over SSH ("does not meet the prerequisites") refuses
-  the sandbox; and `update-alternatives` registers `less` as `/usr/bin/pager`, git's default
-  pager, without which `git log` on a tty fails ("unable to execute pager 'pager'"). A hook is
-  added when a gap is observed, not speculatively, and dropped once the workload ships its result.
+  tool, which has no tty). One install hook per gap; today one: `update-alternatives` registers
+  `less` as `/usr/bin/pager`, git's default pager, without which `git log` on a tty fails ("unable
+  to execute pager 'pager'"). A hook is added when a gap is observed, not speculatively, and
+  dropped once the workload ships its result, as it did for `/etc/ld.so.cache` (which VS Code
+  Server's prerequisite check needs) on 2026-11-05.
 - `kit/asana/`, `kit/atlassian/` and `kit/figma/` each allow only the domains that one service
   needs.
 - `kit/playwright/` installs Node.js (the image ships none), `@playwright/mcp` at the `version`

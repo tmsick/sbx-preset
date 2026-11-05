@@ -7,9 +7,8 @@
 
 - Remove `kit/debian-fixups/` (and its README and `kits.yml` entries) once the `claude` workload
   runs its packages' maintainer scripts or ships their results. Check on a sandbox created without
-  the kit: `ls /etc/ld.so.cache /usr/bin/pager`, `ls /var/lib/dpkg/info/*.postinst`. Or drop a hook
-  at a time as its result appears. Report the cause upstream (docker/sbx-releases): no
-  `.postinst` in the image, so every Debian post-install step is missing.
+  the kit: `ls /usr/bin/pager`, `ls /var/lib/dpkg/info/*.postinst`. Or drop a hook at a time as
+  its result appears.
 
 - Kits are experimental and their grammar moves under released sbx: sbx v0.50.0 stopped composing
   v1/v2 kits with v3 ones, and v3 capabilities get superseded in place (`agent-context@1` by
