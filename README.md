@@ -218,12 +218,17 @@ The kits:
 - `kit/git/` injects `~/.gitconfig` and `~/.gitignore_global` -- deliberately those paths, not
   the XDG-style `~/.config/git/{config,ignore}`. sandboxd forces `core.excludesFile` to
   `~/.gitignore_global` on every sandbox start (merging non-destructively into whatever the kit
-  put there), so an XDG-style ignore file is left shadowed and never read. The kit also covers
-  `git init` in the sandbox and repos outside the mounted workspace, which `sbx`'s own identity
-  injection -- the local `.git/config` of an already-git workspace -- misses. That injection is
-  also where `user.name`/`user.email` come from, not this kit, so `.gitconfig` here carries only
-  alias/workflow preferences. It grants no network permissions: `balanced` already covers
-  github.com:443, and this preset's remotes are HTTPS-only (no SSH port 22).
+  put there), so an XDG-style ignore file is left shadowed and never read. The kit also requests
+  the host's git identity (`git-identity@1`, optional): v3 hands `user.name`/`user.email` only to a
+  kit that asks, and the `claude` workload doesn't, so without it commits in the sandbox are
+  authored as a made-up `agent@<sandbox>.docker.internal`. sbx merges the pair into the global
+  `~/.gitconfig`, not the repository's `.git/config`; being global, it also covers `git init` in
+  the sandbox and repos outside the mounted workspace. It reads the workspace repo's effective
+  config (local, `includeIf`), falling back to the host's global, once at creation. With
+  `optional`, a host without any identity still gets a sandbox, silently without one.
+  `.gitconfig` here therefore carries only alias/workflow preferences. It grants no network
+  permissions: `balanced` already covers github.com:443, and this preset's remotes are HTTPS-only
+  (no SSH port 22).
 - `kit/context7/` allows `**.context7.com:443` -- library/API documentation lookups, used
   routinely enough by this setup's Claude Code config to warrant it on every sandbox.
 - `kit/debian-fixups/` restores what Debian's maintainer scripts would have set up. Docker's
