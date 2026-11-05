@@ -61,7 +61,16 @@ capabilities:
             apt-get update -y
             apt-get install -y --no-install-recommends nodejs npm
           user: "0"
-          env: &net-env [HTTP_PROXY, HTTPS_PROXY, http_proxy, https_proxy, NO_PROXY, no_proxy, NODE_EXTRA_CA_CERTS, SSL_CERT_FILE, NODE_USE_ENV_PROXY]
+          env: &net-env
+            - HTTP_PROXY
+            - HTTPS_PROXY
+            - http_proxy
+            - https_proxy
+            - NO_PROXY
+            - no_proxy
+            - NODE_EXTRA_CA_CERTS
+            - SSL_CERT_FILE
+            - NODE_USE_ENV_PROXY
           description: "Install Node.js and npm"
 
         # --ignore-scripts: nothing the dependency tree ships runs at install.
