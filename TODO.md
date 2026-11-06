@@ -27,6 +27,5 @@
   published kits aren't signed (`kit.requireSignature` would refuse them); Renovate has no
   `minimumReleaseAge`.
 
-- `asana`, `atlassian` and `figma` allow `**.<apex>`, which for multi-tenant services
-  (`*.atlassian.net`) includes other tenants. Narrow to the hosts `sbx policy log` shows in use,
-  or take the Atlassian site as a required kit arg.
+- `asana` and `figma` allow `**.<apex>`, wider than the hosts actually in use. Narrow to what
+  `sbx policy log` shows.
