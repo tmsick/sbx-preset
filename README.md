@@ -207,7 +207,7 @@ collide with.
 
 Besides the three tool kits, `claude-config` and `git` are what the Usage quickstart
 attaches by default -- generic enough to want on every sandbox -- and so is `debian-fixups`, which
-paged commands in a terminal need. `asana` and `figma` are network access for one
+paged commands in a terminal need. `asana`, `figma` and `schemastore` are network access for one
 service each, worth adding only when a project actually talks to it.
 `playwright` is different again -- it installs a browser and registers an MCP server rather than
 just opening network access. There's no directory split between these groups: every kit is attached the same
@@ -264,7 +264,8 @@ The kits:
   to execute pager 'pager'"). A hook is added when a gap is observed, not speculatively, and
   dropped once the workload ships its result, as it did for `/etc/ld.so.cache` (which VS Code
   Server's prerequisite check needs) on 2026-11-05.
-- `kit/asana/` and `kit/figma/` each allow only the domains that one service needs.
+- `kit/asana/`, `kit/figma/` and `kit/schemastore/` each allow only the domains that one service
+  needs.
 - `kit/playwright/` installs Node.js (the image ships none), `@playwright/mcp` at the `version`
   arg's release (globally, as root, scripts disabled) and the Chromium build that release uses at
   creation, and registers it with Claude Code at every sandbox start, so browser automation runs
