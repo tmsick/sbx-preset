@@ -10,9 +10,9 @@ per-service network access ([the other kits](#the-other-kits)).
 For your own project, no clone of this repository needed:
 
 ```sh
-sbx settings set kit.allowedSources '["docker.io/","ghcr.io/tmsick/"]'  # once
-sbx mcp add context7 --url https://mcp.context7.com/mcp                 # once
-sbx skills add upstash/context7 --skill context7-mcp                    # once
+sbx settings set kit.allowedSources '["docker.io/","dhi.io/","ghcr.io/tmsick/"]'  # once
+sbx mcp add context7 --url https://mcp.context7.com/mcp                           # once
+sbx skills add upstash/context7 --skill context7-mcp                              # once
 
 cd /path/to/project   # a git repository
 sbx create --clone --static-mcp context7 \
@@ -24,6 +24,12 @@ sbx create --clone --static-mcp context7 \
   --kit ghcr.io/tmsick/sbx-preset/kit/debian-fixups:latest \
   claude .
 ```
+
+`sbx settings set` replaces `kit.allowedSources` rather than extending it, so the list repeats
+sbx's own defaults (`docker.io/`, and `dhi.io/` since v0.51, for Docker Hardened Image kits) next
+to this repository's `ghcr.io/tmsick/`. No kit here references `dhi.io/`; it is kept so the
+override doesn't narrow the defaults. Compare with `sbx settings get kit.allowedSources` before
+setting it.
 
 `--clone` gives the agent its own clone of the repository inside the sandbox, at the same path,
 instead of bind-mounting the working tree, which is too slow to work in. The host repository gets
