@@ -42,7 +42,6 @@ jobs:
           - claude-config
           - git
           - asana
-          - atlassian
           - figma
           - playwright
           - ca-trust
@@ -83,7 +82,6 @@ jobs:
           - claude-config
           - git
           - asana
-          - atlassian
           - figma
           - playwright
           - ca-trust

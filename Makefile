@@ -7,9 +7,10 @@
 #   make fmt                                   # format the repo with prettier
 #   make fmt-check                             # fail if anything is unformatted
 #   make setup-context7                        # register context7 on this host
+#   make setup-atlassian                       # register atlassian on this host
 #
-# setup-context7 is not a repo task: it writes host-global sbx state (the MCP
-# server and skill that kits can't carry; see README's Usage) and is safe to
+# setup-* are not repo tasks: they write host-global sbx state (the MCP
+# servers and skill that kits can't carry; see README's Usage) and are safe to
 # rerun.
 #
 # fmt runs a pinned prettier through npx; without Node on the host:
@@ -44,6 +45,13 @@ fmt-check:
 setup-context7:
 	sbx mcp inspect context7 >/dev/null 2>&1 || sbx mcp add context7 --url https://mcp.context7.com/mcp
 	sbx skills add upstash/context7 --skill context7-mcp --force
+
+# Same authorization flow as context7. With no --scope, sbx requests every scope
+# the server advertises (write, delete and manage included); add --scope flags to
+# the command below to request fewer. Re-authorize with `sbx mcp auth atlassian`.
+.PHONY: setup-atlassian
+setup-atlassian:
+	sbx mcp inspect atlassian >/dev/null 2>&1 || sbx mcp add atlassian --url https://mcp.atlassian.com/v2/mcp
 
 KITS := $(notdir $(wildcard kit/*))
 
