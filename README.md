@@ -11,15 +11,16 @@ For your own project, no clone of this repository needed:
 
 ```sh
 sbx settings set kit.allowedSources '["docker.io/","ghcr.io/tmsick/"]'  # once
+sbx mcp add context7 --url https://mcp.context7.com/mcp                 # once
+sbx skills add upstash/context7 --skill context7-mcp                    # once
 
 cd /path/to/project   # a git repository
-sbx create --clone \
+sbx create --clone --static-mcp context7 \
   --kit ghcr.io/tmsick/sbx-preset/kit/mise:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/fish:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/nvim:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/claude-config:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/git:latest \
-  --kit ghcr.io/tmsick/sbx-preset/kit/context7:latest \
   --kit ghcr.io/tmsick/sbx-preset/kit/debian-fixups:latest \
   claude .
 ```
@@ -32,6 +33,18 @@ push to them directly. `--clone` is fixed at creation.
 
 The sandbox is named `claude-<directory>` by default (see `sbx ls`); pass `--name` to choose
 another.
+
+The context7 MCP server and skill are host-global sbx state, which a kit can't carry: v3 has no
+capability that registers an MCP server, and `sbx skills` is a host-side store linked into every
+sandbox. The MCP gateway connects to the server from the host, outside the sandbox's network
+policy, so no kit opens `context7.com` for it. The two `# once` commands above (or `make
+setup-context7` in a clone, which is safe to rerun) set them up. sbx detects the server's OAuth
+metadata, so `sbx mcp add` prints an authorization URL to open in a browser; the tokens stay on
+the host (`sbx mcp auth context7` re-authorizes). Only the `context7-mcp` skill is installed:
+upstream's `find-docs` and `context7-cli` run the `ctx7` CLI through `npx`, and the image ships no
+Node.js. `--static-mcp` fixes the sandbox's MCP set at creation; attach the server to an existing
+sandbox with `sbx mcp load context7 --sandbox <name>`. A skill added later reaches a running
+sandbox on its next start.
 
 Add `--kit ghcr.io/tmsick/sbx-preset/kit/<service>:latest` for a project that needs one (see
 [the other kits](#the-other-kits)), or add a kit to an existing sandbox with `sbx kit add
@@ -178,7 +191,7 @@ collide with.
 
 ### The other kits
 
-Besides the three tool kits, `claude-config`, `git` and `context7` are what the Usage quickstart
+Besides the three tool kits, `claude-config` and `git` are what the Usage quickstart
 attaches by default -- generic enough to want on every sandbox -- and so is `debian-fixups`, which
 paged commands in a terminal need. `asana`, `atlassian` and `figma` are network access for one
 service each, worth adding only when a project actually talks to it.
@@ -229,8 +242,6 @@ The kits:
   `.gitconfig` here therefore carries only alias/workflow preferences. It grants no network
   permissions: `balanced` already covers github.com:443, and this preset's remotes are HTTPS-only
   (no SSH port 22).
-- `kit/context7/` allows `**.context7.com:443` -- library/API documentation lookups, used
-  routinely enough by this setup's Claude Code config to warrant it on every sandbox.
 - `kit/debian-fixups/` restores what Debian's maintainer scripts would have set up. Docker's
   `claude` workload (Debian 13 Hardened Image) has none of its packages' postinst steps applied, so
   what they create is missing, and tools trip over it on a terminal (not in Claude Code's Bash

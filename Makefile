@@ -6,6 +6,11 @@
 #   make validate-mise                         # one kit
 #   make fmt                                   # format the repo with prettier
 #   make fmt-check                             # fail if anything is unformatted
+#   make setup-context7                        # register context7 on this host
+#
+# setup-context7 is not a repo task: it writes host-global sbx state (the MCP
+# server and skill that kits can't carry; see README's Usage) and is safe to
+# rerun.
 #
 # fmt runs a pinned prettier through npx; without Node on the host:
 #   mise exec node -- make fmt
@@ -26,6 +31,19 @@ fmt:
 	$(PRETTIER) --write .
 fmt-check:
 	$(PRETTIER) --check .
+
+# sbx detects the server's OAuth metadata, so the first run prints an
+# authorization URL to open in a browser (interactive); the tokens stay on the
+# host. Re-authorize with `sbx mcp auth context7`.
+#
+# Only context7-mcp: the upstream find-docs and context7-cli skills drive the
+# ctx7 CLI through npx, and the sandbox image ships no Node.js. Upstream ships
+# identical copies of context7-mcp under several paths, so sbx warns about
+# duplicates; harmless.
+.PHONY: setup-context7
+setup-context7:
+	sbx mcp inspect context7 >/dev/null 2>&1 || sbx mcp add context7 --url https://mcp.context7.com/mcp
+	sbx skills add upstash/context7 --skill context7-mcp --force
 
 KITS := $(notdir $(wildcard kit/*))
 
