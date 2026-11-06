@@ -1,0 +1,22 @@
+# syntax=docker/sandbox-kit:3
+#
+# Attached only when a project needs it:
+# `--kit ghcr.io/tmsick/sbx-preset/kit/schemastore:latest`. Network allowlist
+# conventions -- including why an entry follows a recorded refusal rather than
+# a guess -- are in the README (## kit/). `balanced` already allows
+# json.schemastore.org:443, which redirects to www.schemastore.org (where the
+# catalog is also served); this opens that host. Grow it from `sbx policy log`
+# if that isn't enough.
+#
+# Declaration-only: no content, just the runtime egress it grants.
+schemaVersion: "3"
+kind: mixin
+displayName: SchemaStore network access
+description: "Allows SchemaStore (JSON Schema catalog), for sandboxes that need it"
+sourceUrl: https://github.com/tmsick/sbx-preset
+capabilities:
+  - type: com.docker.sandbox/network-policy@1
+    config:
+      runtime:
+        allow:
+          - "www.schemastore.org:443"

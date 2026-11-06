@@ -43,6 +43,7 @@ jobs:
           - git
           - asana
           - figma
+          - schemastore
           - playwright
           - ca-trust
           - debian-fixups
@@ -83,6 +84,7 @@ jobs:
           - git
           - asana
           - figma
+          - schemastore
           - playwright
           - ca-trust
           - debian-fixups
