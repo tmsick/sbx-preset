@@ -24,7 +24,7 @@
 # No --offline: sbx can't load a v3 source kit without the daemon. CI
 # (.github/workflows/kits.yml) validates by building instead.
 
-PRETTIER_VERSION := 3.9.10
+PRETTIER_VERSION := 3.10.1
 PRETTIER ?= npx --yes prettier@$(PRETTIER_VERSION)
 
 .PHONY: fmt fmt-check
