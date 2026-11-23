@@ -139,10 +139,10 @@ The workload is Docker's, not built here: an agent's sbx integration -- entrypoi
 injection, session volumes, settings seeding -- lives in its workload kit and silently assumes
 things of the image. Docker keeps that in step; a workload built here would have to track it by
 hand, unchecked. Everything this repository adds is therefore a mixin. The install hooks assume a
-Debian-based workload (`apt-get`, `usermod`, `update-ca-certificates`), as Docker's `claude` is.
+Debian-based workload (`apt-get`, `update-ca-certificates`), as Docker's `claude` is.
 What a kit downloads at build time (mise, fish, Neovim) comes in the overlay, built on
 `debian:trixie-slim` (which needn't match the workload); what the sandbox's own package manager
-has to do (`apt-get`, `usermod`, an `/etc` edit) is an install hook.
+has to do (`apt-get`, an `/etc` edit) is an install hook.
 
 A GitHub Actions workflow ([`.github/workflows/kits.yml`](.github/workflows/kits.yml)) builds
 every kit for `linux/amd64` and `linux/arm64` -- the build is the validation. On `main` only (a
@@ -189,7 +189,10 @@ can't be composed together anyway: both provide `mise`.
 
 fish, from upstream's static build (4.x embeds its functions and completions), at the `version`
 arg, and `config.fish` (locale, path, aliases) scoped to what actually exists in the sandbox.
-`fish.yaml`'s install hook makes fish the `agent` user's login shell (`/etc/shells`, `usermod`).
+`fish.yaml`'s install hook registers fish in `/etc/shells`. It is not the login shell: a plain `ssh`
+session stays bash, and VS Code Remote-SSH, which streams a POSIX install script into the login
+shell, would time out on fish. VS Code's terminal finds fish through `/etc/shells`; set
+`terminal.integrated.defaultProfile.linux` to `"fish"` in its (host-side) user settings.
 
 ### kit/nvim/
 
